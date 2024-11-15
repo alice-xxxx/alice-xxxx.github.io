@@ -8,7 +8,7 @@
       <link href="/posts/a22c1711ae82/"/>
       <url>/posts/a22c1711ae82/</url>
       
-        <content type="html"><![CDATA[<h2 id="11-15适配1-4"><a href="#11-15适配1-4" class="headerlink" title="11.15适配1.4"></a>11.15适配1.4</h2><p>叠甲，纯搬运，纯免费，有问题自己解决<br>重要的事情说三遍、重要的事情说三遍、重要的事情说三遍</p><h3 id="食用："><a href="#食用：" class="headerlink" title="食用："></a>食用：</h3><p>1.解压发送快捷方式到桌面<br>2.右键点击新的快捷方式并选择“属性”<br>3.在“目标”字段的文本末尾添加自己游戏路径如： “D:\Wuthering Waves\Wuthering Waves Game\Client\Binaries\Win64\Client-Win64-Shipping.exe”加自己的别加我的<br><img src="/img/%E8%B5%84%E6%BA%90/2024-10-21-141323.png" alt="lena"></p><p>然后就可以启动快捷方式，进入游戏后按ALT+X，记得以管理员模式启动<br>无法使用的把以前使用的文件删除干净，在使用<br><a href="/file/Launcher.zip">文件</a></p>]]></content>
+        <content type="html"><![CDATA[<h2 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h2><pre><code>11.15适配1.4叠甲，纯搬运，纯免费，有问题自己解决重要的事情说三遍、重要的事情说三遍、重要的事情说三遍</code></pre><h2 id="食用"><a href="#食用" class="headerlink" title="食用"></a>食用</h2><ol><li><p>delete ~mod in Wuthering Waves Game\Client\Content\Paks\~mod,delete Wuthering Waves Game&#x2F;Mod</p></li><li><p>解压发送快捷方式到桌面</p></li><li><p>右键点击新的快捷方式并选择“属性”</p></li><li><p>在“目标”字段的文本末尾添加自己游戏路径如:”D:\Wuthering Waves\Wuthering Waves Game\Client\Binaries\Win64\Client-Win64-Shipping.exe”加自己的别加我的</p><p> <img src="/img/%E8%B5%84%E6%BA%90/2024-10-21-141323.png" alt="lena"></p></li><li><p>然后就可以启动快捷方式，进入游戏后按ALT+X，记得以管理员模式启动,无法使用的把以前使用的文件删除干净，在使用</p></li></ol><h2 id="点此下载文件"><a href="#点此下载文件" class="headerlink" title="点此下载文件"></a><a href="/file/Launcher.zip">点此下载文件</a></h2>]]></content>
       
       
       
