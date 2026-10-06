@@ -17,6 +17,14 @@ createApp({
     const catalogQuery = ref("");
     const readerMode = ref("novel");
     const readerPanel = ref(null);
+    const mediaSpeed = ref("1.0");
+    const videoQuality = ref("1080P");
+    const subtitlesOn = ref(true);
+    const comicMode = ref("vertical");
+    const comicFit = ref("width");
+    const readerBrightness = ref(88);
+    const sleepTimer = ref("关闭");
+    const novelSearch = ref("");
     const reviewOpen = ref(false);
     const modal = ref(null);
     const activeArticle = ref(null);
@@ -177,7 +185,27 @@ createApp({
     });
 
     const readerChapterTitle = computed(() => readerMode.value==="video" ? "第 18 集 · 山野之间" : readerMode.value==="audio" ? "EP.121 · 今天也辛苦了" : readerMode.value==="comic" ? "第 61 话 · 夏日" : readerMode.value==="pdf" ? "第 23 页" : "第 923 章 · 山水之间");
-    const readerPanelTitle = computed(() => readerPanel.value==="directory" ? catalogLabel.value : readerPanel.value==="tts" ? "朗读" : readerPanel.value==="appearance" ? "显示" : "书签");
+    const readerPanelTitle = computed(() => {
+      const titles = {
+        directory: catalogLabel.value,
+        tts: "朗读",
+        appearance: "显示",
+        bookmark: "书签",
+        "novel-search": "本章搜索",
+        "comic-chapters": "选话",
+        "comic-mode": "阅读模式",
+        "comic-fit": "图片适配",
+        "comic-brightness": "亮度",
+        "video-episodes": "选集",
+        "audio-episodes": "节目列表",
+        "audio-speed": "播放速度",
+        "audio-sleep": "睡眠定时",
+        "pdf-pages": "页面",
+        "pdf-display": "PDF 显示",
+        "pdf-search": "文档搜索"
+      };
+      return titles[readerPanel.value] || "";
+    });
 
     const paths = {
       compass:'<circle cx="12" cy="12" r="8.6"/><path d="m15.6 8.4-2.2 5-5 2.2 2.2-5 5-2.2Z"/><circle cx="12" cy="12" r="1"/>',
@@ -226,6 +254,9 @@ createApp({
       link:'<path d="m9.5 14.5 5-5"/><path d="M7.2 16.8 5.7 18.3a3 3 0 0 1-4.2-4.2l3.2-3.2a3 3 0 0 1 4.2 0M16.8 7.2l1.5-1.5a3 3 0 0 1 4.2 4.2l-3.2 3.2a3 3 0 0 1-4.2 0"/>',
       'book-open':'<path d="M5 5h5.5A2.5 2.5 0 0 1 13 7.5V19H7.5A2.5 2.5 0 0 1 5 16.5V5Z"/><path d="M19 5h-3.5A2.5 2.5 0 0 0 13 7.5V19h3.5a2.5 2.5 0 0 0 2.5-2.5V5Z"/>',
       'source-switch':'<path d="M7 7h10l-2.5-2.5M17 17H7l2.5 2.5"/><path d="m17 7 2 2-2 2M7 17l-2-2 2-2"/>',
+      fullscreen:'<path d="M8 4H4v4M16 4h4v4M20 16v4h-4M4 16v4h4"/>',
+      sun:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/>',
+      moon:'<path d="M18.2 16.6A7.5 7.5 0 0 1 7.4 5.8 8 8 0 1 0 18.2 16.6Z"/>',
       back15:'<path d="M7 7H4V4"/><path d="M5 6.5A8 8 0 1 1 4.8 17"/><path d="M10 10v5M13 10.5c2-1 3.5.1 3.5 1.4 0 1.8-3.5 3.1-3.5 3.1h4"/>',
       forward15:'<path d="M17 7h3V4"/><path d="M19 6.5A8 8 0 1 0 19.2 17"/><path d="M8 10v5M11 10.5c2-1 3.5.1 3.5 1.4 0 1.8-3.5 3.1-3.5 3.1h4"/>'
     };
@@ -320,7 +351,7 @@ createApp({
     }
 
     return {
-      screen,tab,discoverCategory,libraryCategory,query,searchType,sourceQuery,selected,detailTab,catalogQuery,readerMode,readerPanel,reviewOpen,modal,activeArticle,historyPeriod,
+      screen,tab,discoverCategory,libraryCategory,query,searchType,sourceQuery,selected,detailTab,catalogQuery,readerMode,readerPanel,mediaSpeed,videoQuality,subtitlesOn,comicMode,comicFit,readerBrightness,sleepTimer,novelSearch,reviewOpen,modal,activeArticle,historyPeriod,
       labels,categories,primaryNav,items,sourceRows,selectedSource,articles,feeds,tasks,groups,importTypes,recentQueries,periods,historyItems,bookmarkGroups,
       replacementRules,selectedRule,tocRules,selectedToc,ttsConfigs,selectedTts,configSections,sourceCandidates,readerParagraphs,readerDirectory,
       discoverItems,libraryItems,searchResults,filteredSources,catalogLabel,primaryAction,progressLabel,chapterRows,readerChapterTitle,readerPanelTitle,
@@ -456,11 +487,184 @@ createApp({
       <div v-else class="detail-sources"><section class="current-source"><small>当前来源</small><div><span class="source-large-icon" v-html="icon(sourceKindIcon(labels[selected.type]))"></span><div><strong>{{selected.sourceName}}</strong><small>{{selected.sourceGroup}} · 响应正常</small></div><button>刷新信息</button></div></section><section class="source-alternatives"><header><strong>可替换来源</strong><label class="mini-search"><span class="icon" v-html="icon('search')"></span><input :value="selected.title"></label></header><article v-for="(s,i) in sourceCandidates" :key="s.name"><div><strong>{{s.name}}</strong><span>{{s.author}} · {{s.latest}}</span><small>{{s.speed}}</small></div><button :class="{primary:i===0}">{{i===0?'当前':'切换'}}</button></article></section></div>
     </section>
 
-    <section v-if="screen==='reader'" class="reader-page" :class="'mode-'+readerMode">
-      <header class="reader-bar"><button class="icon-button" @click="leaveReader"><span class="icon" v-html="icon('arrow-left')"></span></button><div><strong>{{selected?.title}}</strong><small>{{readerChapterTitle}}</small></div><div><button class="icon-button"><span class="icon" v-html="icon('source-switch')"></span></button><button class="icon-button"><span class="icon" v-html="icon('download')"></span></button><button class="icon-button"><span class="icon" v-html="icon('more')"></span></button></div></header>
-      <main class="reader-stage"><article v-if="readerMode==='novel'" class="novel-reader"><h1>{{readerChapterTitle}}</h1><p v-for="p in readerParagraphs" :key="p">{{p}}</p></article><article v-else-if="readerMode==='comic'" class="comic-reader"><img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1400&q=88" alt=""><img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1400&q=88" alt=""></article><article v-else-if="readerMode==='video'" class="video-player"><div class="video-surface"><img :src="selected?.img" alt=""><button class="big-play"><span class="icon" v-html="icon('play')"></span></button></div><div class="video-controls"><span>18:42</span><i><b></b></i><span>42:06</span><button>1080P</button></div></article><article v-else-if="readerMode==='audio'" class="audio-player"><img :src="selected?.img" alt=""><div><small>{{selected?.author}}</small><h1>{{selected?.title}}</h1><strong>{{readerChapterTitle}}</strong><div class="audio-wave"><i v-for="n in 48" :key="n" :style="{height:(10+(n*11)%38)+'px'}"></i></div><div class="audio-progress"><span>18:42</span><b><i></i></b><span>42:06</span></div><div class="audio-controls"><button><span class="icon" v-html="icon('back15')"></span></button><button class="play-center"><span class="icon" v-html="icon('play')"></span></button><button><span class="icon" v-html="icon('forward15')"></span></button></div></div></article><article v-else class="pdf-reader"><aside><span v-for="n in 5" :key="n">{{n}}</span></aside><div class="pdf-sheet"><small>PDF · 第 23 页</small><h2>示例 PDF 页面</h2><p v-for="p in readerParagraphs.slice(0,4)" :key="p">{{p}}</p></div></article></main>
-      <footer class="reader-dock"><button @click="readerPanel='directory'"><span class="icon" v-html="icon('list')"></span><small>{{readerMode==='video'?'剧集':readerMode==='audio'?'节目':'目录'}}</small></button><button v-if="readerMode==='novel'" @click="readerPanel='tts'"><span class="icon" v-html="icon('tts')"></span><small>朗读</small></button><button @click="readerPanel='appearance'"><span class="icon" v-html="icon('appearance')"></span><small>显示</small></button><button @click="readerPanel='bookmark'"><span class="icon" v-html="icon('bookmark')"></span><small>书签</small></button></footer>
-      <aside v-if="readerPanel" class="reader-sheet"><header><strong>{{readerPanelTitle}}</strong><button @click="readerPanel=null"><span class="icon" v-html="icon('close')"></span></button></header><template v-if="readerPanel==='directory'"><label class="mini-search"><span class="icon" v-html="icon('search')"></span><input placeholder="搜索"></label><button v-for="(c,i) in readerDirectory" :key="c" class="directory-row" :class="{current:i===5}"><span>{{String(i+1).padStart(2,'0')}}</span><strong>{{c}}</strong><small v-if="i===5">当前</small></button></template><template v-else-if="readerPanel==='tts'"><label class="sheet-setting"><span>朗读引擎</span><select><option>系统默认</option><option>Edge TTS</option></select></label><label class="sheet-setting"><span>语速</span><input type="range" min=".5" max="3" value="1"></label><label class="sheet-setting"><span>连续朗读</span><input type="checkbox" checked></label><button class="primary-action wide">开始朗读</button></template><template v-else-if="readerPanel==='appearance'"><label class="sheet-setting"><span>{{readerMode==='comic'?'图片缩放':readerMode==='pdf'?'PDF 缩放':'阅读方式'}}</span><select><option>{{readerMode==='comic'?'适合宽度':readerMode==='pdf'?'整页':'左右翻页'}}</option><option>{{readerMode==='comic'?'原始大小':readerMode==='pdf'?'适合宽度':'上下滚动'}}</option></select></label><label v-if="readerMode==='novel'" class="sheet-setting"><span>字号</span><input type="range" min="12" max="36" value="18"></label><div class="reader-themes"><button class="active">纸</button><button>暖</button><button>夜</button></div></template><template v-else><textarea placeholder="写一点备注…"></textarea><div class="button-row"><button>删除书签</button><button class="primary-action">保存书签</button></div></template></aside>
+    <section v-if="screen==='reader'" class="reader-page reader-v2" :class="'mode-'+readerMode">
+      <header class="reader-bar reader-bar-v2">
+        <button class="icon-button" @click="leaveReader"><span class="icon" v-html="icon('arrow-left')"></span></button>
+        <div class="reader-heading">
+          <strong>{{selected?.title}}</strong>
+          <small>{{readerChapterTitle}}</small>
+        </div>
+        <div class="reader-head-actions">
+          <button v-if="readerMode==='novel'" class="icon-button" title="本章搜索" @click="readerPanel='novel-search'"><span class="icon" v-html="icon('search')"></span></button>
+          <button v-if="readerMode==='novel'" class="icon-button" title="书签" @click="readerPanel='bookmark'"><span class="icon" v-html="icon('bookmark')"></span></button>
+          <button v-if="readerMode==='novel'||readerMode==='comic'" class="icon-button" title="换源"><span class="icon" v-html="icon('source-switch')"></span></button>
+          <button class="icon-button" title="更多"><span class="icon" v-html="icon('more')"></span></button>
+        </div>
+      </header>
+
+      <main class="reader-stage reader-stage-v2">
+        <!-- Text: reading first, controls stay out of the page -->
+        <article v-if="readerMode==='novel'" class="novel-reader-v2">
+          <div class="novel-reading-meta"><span>923 / 1268</span><span>73%</span></div>
+          <h1>{{readerChapterTitle}}</h1>
+          <p v-for="p in readerParagraphs" :key="p">{{p}}</p>
+          <div class="chapter-end">
+            <small>本章完</small>
+            <button>下一章 <span class="icon" v-html="icon('chevron-right')"></span></button>
+          </div>
+        </article>
+
+        <!-- Comic: pages own the screen; reading controls are comic-specific -->
+        <article v-else-if="readerMode==='comic'" class="comic-reader-v2" :class="['comic-'+comicMode,'fit-'+comicFit]">
+          <div class="comic-page"><img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1400&q=88" alt=""></div>
+          <div class="comic-page"><img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1400&q=88" alt=""></div>
+          <span class="comic-page-counter">12 / 24</span>
+        </article>
+
+        <!-- Video: player controls live with the player, not in a generic reader dock -->
+        <article v-else-if="readerMode==='video'" class="video-player-v2">
+          <div class="video-surface-v2">
+            <img :src="selected?.img" alt="">
+            <button class="video-center-play"><span class="icon" v-html="icon('play')"></span></button>
+            <div class="video-overlay-controls">
+              <div class="video-time-row"><span>18:42</span><i><b></b></i><span>42:06</span></div>
+              <div class="video-action-row">
+                <button class="video-play-small"><span class="icon" v-html="icon('play')"></span></button>
+                <button @click="readerPanel='video-episodes'"><span class="icon" v-html="icon('list')"></span><em>选集</em></button>
+                <span class="video-control-spacer"></span>
+                <select v-model="mediaSpeed" title="播放速度"><option>0.75</option><option>1.0</option><option>1.25</option><option>1.5</option><option>2.0</option></select>
+                <select v-model="videoQuality" title="清晰度"><option>自动</option><option>1080P</option><option>720P</option><option>480P</option></select>
+                <button :class="{active:subtitlesOn}" @click="subtitlesOn=!subtitlesOn"><em>字幕</em></button>
+                <button title="全屏"><span class="icon" v-html="icon('fullscreen')"></span></button>
+              </div>
+            </div>
+          </div>
+          <div class="video-now-playing">
+            <div><strong>{{readerChapterTitle}}</strong><small>{{selected?.title}} · {{selected?.author}}</small></div>
+            <button @click="readerPanel='video-episodes'">18 / 40 集 <span class="icon" v-html="icon('chevron-right')"></span></button>
+          </div>
+        </article>
+
+        <!-- Audio: speed/sleep/queue are first-class controls -->
+        <article v-else-if="readerMode==='audio'" class="audio-player-v2">
+          <div class="audio-art-v2"><img :src="selected?.img" alt=""></div>
+          <div class="audio-content-v2">
+            <small>{{selected?.author}}</small>
+            <h1>{{selected?.title}}</h1>
+            <strong>{{readerChapterTitle}}</strong>
+            <div class="audio-wave-v2"><i v-for="n in 54" :key="n" :style="{height:(9+(n*11)%34)+'px'}"></i></div>
+            <div class="audio-progress-v2"><span>18:42</span><b><i></i></b><span>42:06</span></div>
+            <div class="audio-main-controls">
+              <button title="后退 15 秒"><span class="icon" v-html="icon('back15')"></span></button>
+              <button class="audio-play-main"><span class="icon" v-html="icon('play')"></span></button>
+              <button title="前进 15 秒"><span class="icon" v-html="icon('forward15')"></span></button>
+            </div>
+            <div class="audio-utility-row">
+              <button @click="readerPanel='audio-speed'"><strong>{{mediaSpeed}}×</strong><small>倍速</small></button>
+              <button @click="readerPanel='audio-sleep'"><span class="icon" v-html="icon('moon')"></span><small>睡眠</small></button>
+              <button @click="readerPanel='audio-episodes'"><span class="icon" v-html="icon('list')"></span><small>节目</small></button>
+            </div>
+          </div>
+        </article>
+
+        <!-- PDF kept document-specific -->
+        <article v-else class="pdf-reader-v2">
+          <aside><span v-for="n in 5" :key="n" :class="{active:n===3}">{{n}}</span></aside>
+          <div class="pdf-sheet-v2"><small>PDF · 第 23 页</small><h2>示例 PDF 页面</h2><p v-for="p in readerParagraphs.slice(0,4)" :key="p">{{p}}</p></div>
+        </article>
+      </main>
+
+      <!-- Only modes that actually need a persistent dock get one -->
+      <footer v-if="readerMode==='novel'" class="reader-dock-v2 text-dock">
+        <button @click="readerPanel='directory'"><span class="icon" v-html="icon('list')"></span><small>目录</small></button>
+        <button @click="readerPanel='tts'"><span class="icon" v-html="icon('tts')"></span><small>朗读</small></button>
+        <button @click="readerPanel='appearance'"><span class="icon" v-html="icon('appearance')"></span><small>显示</small></button>
+      </footer>
+
+      <footer v-else-if="readerMode==='comic'" class="reader-dock-v2 comic-dock">
+        <button @click="readerPanel='comic-chapters'"><span class="icon" v-html="icon('list')"></span><small>选话</small></button>
+        <button @click="readerPanel='comic-mode'"><span class="icon" v-html="icon('layout')"></span><small>阅读模式</small></button>
+        <button @click="readerPanel='comic-fit'"><span class="icon" v-html="icon('appearance')"></span><small>图片适配</small></button>
+        <button @click="readerPanel='comic-brightness'"><span class="icon" v-html="icon('sun')"></span><small>亮度</small></button>
+      </footer>
+
+      <footer v-else-if="readerMode==='pdf'" class="reader-dock-v2 pdf-dock">
+        <button @click="readerPanel='pdf-pages'"><span class="icon" v-html="icon('list')"></span><small>页面</small></button>
+        <button @click="readerPanel='pdf-search'"><span class="icon" v-html="icon('search')"></span><small>搜索</small></button>
+        <button @click="readerPanel='pdf-display'"><span class="icon" v-html="icon('appearance')"></span><small>显示</small></button>
+        <button @click="readerPanel='bookmark'"><span class="icon" v-html="icon('bookmark')"></span><small>书签</small></button>
+      </footer>
+
+      <aside v-if="readerPanel" class="reader-sheet reader-sheet-v2">
+        <header><strong>{{readerPanelTitle}}</strong><button @click="readerPanel=null"><span class="icon" v-html="icon('close')"></span></button></header>
+
+        <template v-if="readerPanel==='directory'||readerPanel==='comic-chapters'||readerPanel==='video-episodes'||readerPanel==='audio-episodes'">
+          <label class="mini-search"><span class="icon" v-html="icon('search')"></span><input :placeholder="readerMode==='video'?'搜索剧集':readerMode==='audio'?'搜索节目':'搜索章节'"></label>
+          <button v-for="(c,i) in readerDirectory" :key="c" class="directory-row" :class="{current:i===5}">
+            <span>{{String(i+1).padStart(2,'0')}}</span><strong>{{readerMode==='video'?'第 '+(i+13)+' 集':readerMode==='audio'?'EP.'+(i+116):c}}</strong><small v-if="i===5">当前</small>
+          </button>
+        </template>
+
+        <template v-else-if="readerPanel==='novel-search'">
+          <label class="mini-search"><span class="icon" v-html="icon('search')"></span><input v-model="novelSearch" autofocus placeholder="在本章中查找"></label>
+          <div class="reader-search-empty">{{novelSearch ? '找到 2 处匹配内容' : '输入关键词查找本章内容'}}</div>
+        </template>
+
+        <template v-else-if="readerPanel==='tts'">
+          <label class="sheet-setting"><span>朗读引擎</span><select><option>系统默认</option><option>Edge TTS</option></select></label>
+          <label class="sheet-setting"><span>语速</span><select><option>0.8×</option><option>1.0×</option><option>1.2×</option><option>1.5×</option><option>2.0×</option></select></label>
+          <label class="sheet-setting"><span>连续朗读</span><input type="checkbox" checked></label>
+          <button class="primary-action wide">开始朗读</button>
+        </template>
+
+        <template v-else-if="readerPanel==='appearance'">
+          <label class="sheet-setting"><span>翻页方式</span><select><option>左右翻页</option><option>上下滚动</option></select></label>
+          <label class="sheet-setting"><span>字号</span><input type="range" min="12" max="36" value="18"></label>
+          <label class="sheet-setting"><span>行距</span><input type="range" min="1.2" max="2.8" step=".1" value="1.8"></label>
+          <div class="reader-themes"><button class="active">纸</button><button>暖</button><button>夜</button></div>
+        </template>
+
+        <template v-else-if="readerPanel==='bookmark'">
+          <textarea placeholder="书签备注（可选）"></textarea>
+          <div class="button-row"><span></span><span></span><button class="primary-action">保存当前位置</button></div>
+        </template>
+
+        <template v-else-if="readerPanel==='comic-mode'">
+          <button class="choice-row" :class="{active:comicMode==='vertical'}" @click="comicMode='vertical'"><span><strong>上下连续</strong><small>适合条漫和连续阅读</small></span><i></i></button>
+          <button class="choice-row" :class="{active:comicMode==='paged'}" @click="comicMode='paged'"><span><strong>左右翻页</strong><small>单页浏览，左右切换</small></span><i></i></button>
+        </template>
+
+        <template v-else-if="readerPanel==='comic-fit'">
+          <button class="choice-row" :class="{active:comicFit==='width'}" @click="comicFit='width'"><span><strong>适合宽度</strong><small>图片宽度填满可视区域</small></span><i></i></button>
+          <button class="choice-row" :class="{active:comicFit==='original'}" @click="comicFit='original'"><span><strong>原始大小</strong><small>保留图片原始比例和尺寸</small></span><i></i></button>
+        </template>
+
+        <template v-else-if="readerPanel==='comic-brightness'">
+          <label class="brightness-control"><span class="icon" v-html="icon('sun')"></span><input v-model="readerBrightness" type="range" min="30" max="100"><strong>{{readerBrightness}}%</strong></label>
+        </template>
+
+        <template v-else-if="readerPanel==='audio-speed'">
+          <div class="speed-grid"><button v-for="s in ['0.75','1.0','1.25','1.5','1.75','2.0']" :key="s" :class="{active:mediaSpeed===s}" @click="mediaSpeed=s;readerPanel=null">{{s}}×</button></div>
+        </template>
+
+        <template v-else-if="readerPanel==='audio-sleep'">
+          <div class="sleep-list"><button v-for="s in ['关闭','15 分钟','30 分钟','45 分钟','60 分钟','本期结束']" :key="s" :class="{active:sleepTimer===s}" @click="sleepTimer=s">{{s}}<span v-if="sleepTimer===s">✓</span></button></div>
+        </template>
+
+        <template v-else-if="readerPanel==='pdf-pages'">
+          <div class="pdf-page-grid"><button v-for="n in 12" :key="n" :class="{active:n===3}"><span>{{n}}</span></button></div>
+        </template>
+
+        <template v-else-if="readerPanel==='pdf-search'">
+          <label class="mini-search"><span class="icon" v-html="icon('search')"></span><input placeholder="搜索文档文字"></label>
+          <div class="reader-search-empty">输入关键词搜索整个文档</div>
+        </template>
+
+        <template v-else-if="readerPanel==='pdf-display'">
+          <label class="sheet-setting"><span>页面适配</span><select><option>整页</option><option>适合宽度</option><option>实际大小</option></select></label>
+          <label class="sheet-setting"><span>页面方向</span><select><option>纵向</option><option>横向</option></select></label>
+        </template>
+      </aside>
     </section>
 
     <button v-if="screen!=='reader' && !reviewOpen" class="review-button" @click="reviewOpen=true">界面索引</button>
