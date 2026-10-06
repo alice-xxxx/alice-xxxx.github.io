@@ -9,8 +9,567 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <div id="app"></div>
-  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
-  <script src="./app.js"></script>
+<div id="app">
+  <div class="app-shell" :class="{ 'reader-active': screen === 'reader' }">
+    <aside v-if="screen === 'main'" class="side-rail" aria-label="主导航">
+      <div class="rail-list">
+        <button v-for="n in navItems" :key="n.key" class="rail-item" :class="{active:tab===n.key}" @click="tab=n.key">
+          <span class="nav-icon" v-html="navIcon(n.key,tab===n.key)"></span>
+          <span>{{n.label}}</span>
+        </button>
+      </div>
+    </aside>
+
+    <div v-if="screen === 'main'" class="page-wrap">
+      <main class="page">
+        <section v-if="tab==='discover'" class="discover-view">
+          <div class="topbar">
+            <label class="search-box" @click="go('search')">
+              <svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15.6 15.6 4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <input :value="search" readonly placeholder="搜索内容、作者、频道或来源">
+            </label>
+          </div>
+
+          <nav class="chips">
+            <button v-for="c in categories" :key="c.value" class="chip" :class="{active:discoverCategory===c.value}" @click="discoverCategory=c.value">{{c.label}}</button>
+          </nav>
+
+          <div class="content-grid">
+            <article v-for="item in discoverItems" :key="item.id" class="content-card">
+              <button class="cover-button" @click="openDetail(item)">
+                <div class="cover"><img :src="item.img" :alt="item.title" loading="lazy"></div>
+                <div class="card-info">
+                  <div class="card-title">{{item.title}}</div>
+                  <div class="card-sub">{{item.sub}}</div>
+                  <div class="card-meta">
+                    <i class="type-mark" :class="'type-'+item.type">{{labels[item.type][0]}}</i>
+                    <span>{{labels[item.type]}}</span><span>·</span><span>{{item.stat}}</span>
+                  </div>
+                </div>
+              </button>
+            </article>
+          </div>
+        </section>
+
+        <section v-else-if="tab==='library'" class="library-view">
+          <div class="library-head">
+            <span>{{libraryItems.length}} 个收藏</span>
+            <div class="inline-actions">
+              <button @click="go('import')">导入</button>
+              <button @click="go('organizer')">整理</button>
+              <button>最近浏览 ↓</button>
+            </div>
+          </div>
+          <nav class="chips">
+            <button v-for="c in categories" :key="c.value" class="chip" :class="{active:libraryCategory===c.value}" @click="libraryCategory=c.value">{{c.label}}</button>
+          </nav>
+          <div class="content-grid">
+            <article v-for="item in libraryItems" :key="item.id" class="content-card">
+              <button class="cover-button" @click="openDetail(item)">
+                <div class="cover"><img :src="item.img" :alt="item.title" loading="lazy"></div>
+                <div class="card-info">
+                  <div class="card-title">{{item.title}}</div>
+                  <div class="card-sub">{{item.sub}}</div>
+                  <div class="card-meta">
+                    <i class="type-mark" :class="'type-'+item.type">{{labels[item.type][0]}}</i>
+                    <span>{{labels[item.type]}}</span><span>·</span><span>{{item.progress}}</span>
+                  </div>
+                </div>
+              </button>
+            </article>
+          </div>
+        </section>
+
+        <section v-else class="me-view">
+          <div class="settings-group first-group">
+            <small class="group-label">内容与数据</small>
+            <button class="setting-row" @click="go('history')">
+              <span class="setting-icon">◷</span><span class="setting-copy"><strong>历史记录</strong><small>阅读、观看和收听历史</small></span><span class="chevron">›</span>
+            </button>
+            <button class="setting-row" @click="go('tasks')">
+              <span class="setting-icon">↓</span><span class="setting-copy"><strong>下载与任务</strong><small>缓存、更新、搜索和后台任务</small></span><span class="chevron">›</span>
+            </button>
+            <button class="setting-row" @click="go('sources')">
+              <span class="setting-icon">◎</span><span class="setting-copy"><strong>内容来源</strong><small>小说、漫画、视频、音频与 RSS 来源</small></span><span class="chevron">›</span>
+            </button>
+          </div>
+
+          <div class="settings-group">
+            <small class="group-label">应用</small>
+            <button class="setting-row" @click="go('appearance')">
+              <span class="setting-icon">◐</span><span class="setting-copy"><strong>外观</strong><small>主题、字体、排版与阅读背景</small></span><span class="chevron">›</span>
+            </button>
+            <button class="setting-row" @click="go('backup')">
+              <span class="setting-icon">↻</span><span class="setting-copy"><strong>备份与同步</strong><small>本地备份、WebDAV 和恢复</small></span><span class="chevron">›</span>
+            </button>
+            <button class="setting-row" @click="go('settings')">
+              <span class="setting-icon">⚙</span><span class="setting-copy"><strong>设置</strong><small>缓存、规则、网络、朗读与高级选项</small></span><span class="chevron">›</span>
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <nav v-if="screen === 'main'" class="bottom-nav" aria-label="主导航">
+      <button v-for="n in navItems" :key="n.key" class="bottom-item" :class="{active:tab===n.key}" @click="tab=n.key">
+        <span class="nav-icon" v-html="navIcon(n.key,tab===n.key)"></span>
+        <span>{{n.label}}</span>
+      </button>
+    </nav>
+
+    <!-- Search -->
+    <main v-if="screen==='search'" class="subpage">
+      <header class="subpage-header">
+        <button class="back-button" @click="goMain('discover')">‹</button>
+        <div><strong>搜索</strong><small>跨已启用来源查找内容</small></div>
+      </header>
+      <div class="subpage-body search-page">
+        <form class="search-hero" @submit.prevent="searchWasRun=true">
+          <span>⌕</span>
+          <input v-model="search" autofocus placeholder="搜索书名、作者或关键词">
+          <button v-if="search" type="button" @click="search=''">×</button>
+          <button class="primary-compact">搜索</button>
+        </form>
+        <div v-if="!searchWasRun" class="search-history-block">
+          <div class="section-title-row"><h3>最近搜索</h3><button>清空</button></div>
+          <div class="history-chips"><button v-for="q in ['三体','有声书','异世界','纪录片','新海诚','白噪音']" :key="q" @click="search=q">{{q}}</button></div>
+        </div>
+        <div class="search-layout">
+          <aside class="search-filter-panel">
+            <section><strong>搜索范围</strong><label v-for="s in sourceRows.slice(0,6)" :key="s.id"><input type="checkbox" checked><span>{{s.name}}</span></label></section>
+            <section><strong>内容类型</strong><label v-for="c in categories.slice(1)" :key="c.value"><input type="checkbox" checked><span>{{c.label}}</span></label></section>
+            <section><strong>匹配方式</strong><select><option>包含</option><option>精确</option></select></section>
+            <section><strong>排序</strong><select><option>相关度</option><option>书名</option><option>作者</option></select></section>
+          </aside>
+          <section class="search-results">
+            <div class="section-title-row"><h3>搜索结果</h3><span>{{searchWasRun ? '24 个结果' : '示例结果'}}</span></div>
+            <article v-for="item in items.slice(0,7)" :key="item.id" class="search-result-row" @click="openDetail(item)">
+              <img :src="item.img" alt="">
+              <div><strong>{{item.title}}</strong><span>{{item.author}} · {{item.sourceName}}</span><small>{{item.intro}}</small></div>
+              <button class="ghost-compact">详情</button>
+            </article>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <!-- RSS -->
+    <main v-if="screen==='rss'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="goMain('discover')">‹</button><div><strong>订阅文章</strong><small>RSS / 文章类来源</small></div></header>
+      <div class="subpage-body">
+        <div class="toolbar-row">
+          <div class="segmented"><button class="active">全部文章</button><button>未读</button><button>已读</button><button>已收藏</button></div>
+          <select><option>全部订阅源</option><option>科技周刊</option><option>开发者资讯</option></select>
+        </div>
+        <div class="article-list">
+          <article v-for="article in articles" :key="article.title" @click="activeArticle=article;modal='article'">
+            <div><small>{{article.source}} · {{article.time}}</small><strong>{{article.title}}</strong><p>{{article.summary}}</p></div>
+            <span :class="{unread:!article.read}"></span>
+          </article>
+        </div>
+      </div>
+    </main>
+
+    <!-- Library organizer -->
+    <main v-if="screen==='organizer'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="goMain('library')">‹</button><div><strong>整理内容库</strong><small>分组、筛选和批量管理收藏内容</small></div><button class="header-action">保存</button></header>
+      <div class="subpage-body organizer-layout">
+        <aside class="group-panel">
+          <div class="section-title-row"><h3>分组</h3><button>＋</button></div>
+          <button class="group-row active"><span>全部藏书</span><small>18</small></button>
+          <button v-for="g in ['稍后看','长篇小说','漫画追更','睡前听','纪录片']" :key="g" class="group-row"><span>{{g}}</span><small>{{2+g.length}}</small></button>
+          <button class="subtle-button">整理书架分组</button>
+        </aside>
+        <section class="organizer-main">
+          <div class="organizer-toolbar"><label><input type="checkbox"> 全选当前</label><span>已选择 3 项</span><button>加入分组</button><button class="danger-text">移除</button></div>
+          <div class="organizer-grid">
+            <label v-for="item in libraryItems" :key="item.id" class="organizer-card">
+              <input type="checkbox">
+              <img :src="item.img" alt="">
+              <strong>{{item.title}}</strong><small>{{item.author}}</small>
+            </label>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Import -->
+    <main v-if="screen==='import'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="goMain('library')">‹</button><div><strong>导入内容</strong><small>本地文件与外部来源</small></div></header>
+      <div class="subpage-body import-page">
+        <section class="import-block">
+          <div class="section-title-row"><h3>本地文件</h3><span>直接保存在本机</span></div>
+          <div class="import-type-grid">
+            <button v-for="f in importTypes" :key="f.ext" @click="modal='import-progress'"><span>{{f.icon}}</span><strong>{{f.ext}}</strong><small>{{f.desc}}</small></button>
+          </div>
+        </section>
+        <section class="import-block">
+          <div class="section-title-row"><h3>通过链接导入</h3><span>书源 / RSS / 规则</span></div>
+          <label class="url-import"><input placeholder="粘贴 JSON、RSS 或分享链接"><button class="primary-compact">识别并导入</button></label>
+          <p class="helper-text">识别后会先显示类型和数量，再由你确认写入。</p>
+        </section>
+        <section class="import-block">
+          <div class="section-title-row"><h3>最近导入</h3></div>
+          <div class="simple-list"><div><strong>银河帝国.epub</strong><span>EPUB · 2026-10-05</span></div><div><strong>漫画合集.cbz</strong><span>CBZ · 2026-10-04</span></div></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Sources -->
+    <main v-if="screen==='sources'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="goMain('me')">‹</button><div><strong>内容来源</strong><small>{{sourceRows.length}} 个已导入 · {{sourceRows.filter(s=>s.enabled).length}} 个已启用</small></div><button class="header-action" @click="modal='source-import'">导入来源</button></header>
+      <div class="subpage-body sources-page">
+        <div class="source-toolbar">
+          <label class="compact-search"><span>⌕</span><input v-model="sourceQuery" placeholder="搜索名称或分组"></label>
+          <select><option>全部分组</option><option>小说</option><option>漫画</option><option>视频</option><option>音频</option><option>RSS</option></select>
+          <select><option>全部状态</option><option>已启用</option><option>已停用</option></select>
+          <button>批量启用</button><button>批量停用</button>
+        </div>
+        <div class="source-table">
+          <div class="source-table-head"><span></span><span>书源名称</span><span>类型 / 分组</span><span>状态</span><span>操作</span></div>
+          <article v-for="s in filteredSources" :key="s.id" class="source-row">
+            <input type="checkbox">
+            <div><strong>{{s.name}}</strong><small>{{s.url}}</small></div>
+            <div><span class="source-kind">{{s.kind}}</span><small>{{s.group}}</small></div>
+            <button class="status-pill" :class="{enabled:s.enabled}" @click="s.enabled=!s.enabled">{{s.enabled?'已启用':'已停用'}}</button>
+            <div class="source-row-actions">
+              <button @click="activeSource=s;modal='source-debug'">测试</button>
+              <button @click="activeSource=s;modal='source-login'">登录</button>
+              <button @click="activeSource=s;modal='source-edit'">编辑</button>
+              <button>•••</button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tasks -->
+    <main v-if="screen==='tasks'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="goMain('me')">‹</button><div><strong>下载与任务</strong><small>缓存、更新、搜索和导入任务</small></div></header>
+      <div class="subpage-body tasks-page">
+        <div class="task-summary"><span><strong>3</strong><small>进行中</small></span><button>暂停全部</button><button>继续全部</button><button>清理已结束</button></div>
+        <div class="task-list">
+          <article v-for="task in tasks" :key="task.title" class="task-card">
+            <div class="task-main"><span class="task-icon">{{task.icon}}</span><div><strong>{{task.title}}</strong><span>{{task.state}} · {{task.done}} / {{task.total}}</span></div><small>{{task.time}}</small></div>
+            <div class="task-progress"><i :style="{width:(task.done/task.total*100)+'%'}"></i></div>
+            <div class="task-actions"><button>{{task.state==='已暂停'?'继续':'暂停'}}</button><button>取消</button><button>查看</button></div>
+          </article>
+        </div>
+      </div>
+    </main>
+
+    <!-- History -->
+    <main v-if="screen==='history'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="goMain('me')">‹</button><div><strong>历史记录</strong><small>阅读、观看和收听统计</small></div><button class="header-action danger-text">清空全部记录</button></header>
+      <div class="subpage-body history-page">
+        <div class="period-tabs"><button v-for="p in ['今天','近 7 天','近 30 天','全部时间']" :key="p" :class="{active:historyPeriod===p}" @click="historyPeriod=p">{{p}}</button></div>
+        <div class="history-stats"><span><small>累计时长</small><strong>126 小时 42 分</strong></span><span><small>阅读次数</small><strong>384</strong></span><span><small>读过的内容</small><strong>42</strong></span></div>
+        <section class="heatmap-block"><div class="section-title-row"><h3>近 13 周活跃度</h3><span>少　░ ▒ ▓ █　多</span></div><div class="heatmap"><i v-for="(v,i) in heatmap" :key="i" :class="'lv-'+v"></i></div></section>
+        <div class="history-tabs"><button :class="{active:historyTab==='history'}" @click="historyTab='history'">内容记录</button><button :class="{active:historyTab==='bookmarks'}" @click="historyTab='bookmarks'">书签</button></div>
+        <div v-if="historyTab==='history'" class="history-list">
+          <article v-for="item in libraryItems" :key="item.id"><img :src="item.img" alt=""><div><strong>{{item.title}}</strong><span>{{item.progress}}</span><small>最近：今天 19:24 · 累计 6 小时 18 分</small></div><button>删除</button></article>
+        </div>
+        <div v-else class="bookmark-list">
+          <article v-for="(b,i) in bookmarks" :key="i"><span>{{i+1}}</span><div><strong>{{b.title}}</strong><small>{{b.note}}</small></div><button>打开</button><button>删除</button></article>
+        </div>
+      </div>
+    </main>
+
+    <!-- Appearance -->
+    <main v-if="screen==='appearance'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="goMain('me')">‹</button><div><strong>外观</strong><small>主题、字体、排版和阅读背景</small></div></header>
+      <div class="subpage-body form-page">
+        <div class="setting-control-row"><div><strong>阅读背景图片</strong><small>选择 JPEG、PNG 或 WebP 图片</small></div><div class="control-actions"><span class="mini-preview"></span><button>选择图片</button><button>清除</button></div></div>
+        <div class="setting-control-row"><div><strong>背景图片强度</strong><small>低强度能让正文保持清晰</small></div><div class="range-wrap"><input type="range" value="28"><b>28%</b></div></div>
+        <div class="setting-control-row"><div><strong>字体大小</strong><small>当前 18 px</small></div><div class="range-wrap"><button>−</button><input type="range" min="12" max="36" value="18"><button>＋</button></div></div>
+        <div class="setting-control-row"><div><strong>行间距</strong><small>1.8</small></div><input type="range" min="1.2" max="2.8" step=".1" value="1.8"></div>
+        <div class="setting-control-row"><div><strong>正文字体</strong><small>只改变显示效果</small></div><select><option>系统字体</option><option>衬线字体</option><option>无衬线字体</option><option>等宽字体</option></select></div>
+        <div class="setting-control-row"><div><strong>阅读主题</strong><small>选择喜欢的阅读底色</small></div><div class="theme-picker"><button class="paper active"><i></i>纸张</button><button class="sepia"><i></i>暖色</button><button class="dark"><i></i>夜间</button><button class="system"><i></i>系统</button></div></div>
+        <div class="setting-control-row"><div><strong>预读章节</strong><small>提前准备 3 章</small></div><div class="range-wrap"><button>−</button><input type="range" min="1" max="20" value="3"><button>＋</button></div></div>
+        <p class="autosave-note">更改会自动保存。</p>
+      </div>
+    </main>
+
+    <!-- Backup -->
+    <main v-if="screen==='backup'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="goMain('me')">‹</button><div><strong>备份与同步</strong><small>本地备份、WebDAV 和数据恢复</small></div></header>
+      <div class="subpage-body form-page">
+        <div class="notice-block"><p>备份包含内容库、历史记录、书签、设置、缓存内容、来源和登录状态。</p><small>最近备份：2026-10-05 23:18</small></div>
+        <div class="setting-control-row"><div><strong>本地备份</strong><small>保存为备份文件，或从备份恢复</small></div><div class="control-actions"><button class="primary-compact">创建备份</button><button>从备份恢复</button></div></div>
+        <p class="warning-note">恢复会用所选备份替换当前本地数据，并在完成后重新载入内容库。</p>
+        <section class="form-section"><div class="section-title-row"><div><h3>WebDAV 备份</h3><small>完整备份保存为 legado-rs-backup.zip</small></div><button>重新读取配置</button></div>
+          <div class="setting-control-row"><div><strong>WebDAV 目录 URL</strong><small>输入完整的远程目录地址</small></div><input placeholder="https://example.com/remote.php/dav/files/user/"></div>
+          <div class="setting-control-row"><div><strong>用户名</strong><small>WebDAV 账号</small></div><input placeholder="用户名"></div>
+          <div class="setting-control-row"><div><strong>密码</strong><small>密码不会回填到页面</small></div><input type="password" placeholder="已保存；留空保持不变"></div>
+          <div class="setting-control-row"><div><strong>应用运行期间自动备份</strong><small>应用关闭后不会继续运行</small></div><select><option>关闭</option><option>每 6 小时</option><option>每 12 小时</option><option>每天</option><option>每 3 天</option></select></div>
+          <div class="control-actions left"><button>上传备份</button><button class="danger-outline">从 WebDAV 恢复</button></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Settings hub -->
+    <main v-if="screen==='settings'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="goMain('me')">‹</button><div><strong>设置</strong><small>缓存、规则、网络、朗读与高级选项</small></div></header>
+      <div class="subpage-body settings-hub">
+        <section><small class="group-label">规则与解析</small>
+          <button class="setting-row" @click="go('rules')"><span class="setting-icon">⇄</span><span class="setting-copy"><strong>替换净化</strong><small>管理显示替换规则和订阅</small></span><span class="chevron">›</span></button>
+          <button class="setting-row" @click="go('txttoc')"><span class="setting-icon">▤</span><span class="setting-copy"><strong>TXT 目录规则</strong><small>设置新导入 TXT 的章节识别方式</small></span><span class="chevron">›</span></button>
+          <button class="setting-row" @click="go('homeconfig')"><span class="setting-icon">▦</span><span class="setting-copy"><strong>发现栏目配置</strong><small>调整发现页标签、栏目顺序和展示样式</small></span><span class="chevron">›</span></button>
+        </section>
+        <section><small class="group-label">缓存与网络</small>
+          <div class="settings-card"><div class="settings-card-head"><span>HTML</span><div><strong>正文缓存</strong><small>统计内容库目录引用的缓存正文</small></div></div><div class="metric-row"><span>当前正文占用</span><b>486 MB</b></div><div class="metric-row"><span>在线内容</span><b>421 MB · 1,284 项</b></div><div class="metric-row"><span>本地内容</span><b>65 MB · 328 项</b></div><div class="control-actions left"><button>刷新占用</button><button class="danger-outline" @click="modal='cache-confirm'">清理在线正文缓存</button></div></div>
+          <div class="settings-card"><div class="settings-card-head"><span>⟳</span><div><strong>自动检查内容更新</strong><small>只检查更新，不自动下载正文</small></div></div><div class="metric-row"><span>应用运行期间自动检查</span><input type="checkbox" checked></div><div class="metric-row"><span>检查间隔</span><select><option>每 6 小时</option><option>每 12 小时</option><option>每 24 小时</option></select></div></div>
+          <div class="settings-card"><div class="settings-card-head"><span>↔</span><div><strong>来源请求超时</strong><small>单次 HTTP 请求的总时限，包含自动重试</small></div></div><div class="metric-row"><span>最长时限</span><select><option>30 秒</option><option>15 秒</option><option>60 秒</option><option>120 秒</option></select></div></div>
+        </section>
+        <section><small class="group-label">朗读</small><button class="setting-row" @click="go('tts')"><span class="setting-icon">♫</span><span class="setting-copy"><strong>TTS 朗读源</strong><small>系统语音与 HTTP TTS 配置</small></span><span class="chevron">›</span></button></section>
+      </div>
+    </main>
+
+    <!-- Replacement rules -->
+    <main v-if="screen==='rules'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="go('settings')">‹</button><div><strong>替换净化</strong><small>文本显示替换规则与订阅</small></div><button class="header-action" @click="modal='rule-edit'">新建规则</button></header>
+      <div class="subpage-body rules-page">
+        <div class="rule-toolbar"><label class="compact-search"><span>⌕</span><input placeholder="搜索净化规则"></label><select><option>全部规则</option><option>已启用</option><option>已停用</option><option>订阅规则</option></select><select><option>默认顺序</option><option>名称升序</option><option>名称降序</option></select><button>本地导入</button><button @click="modal='rule-subscribe'">订阅管理</button></div>
+        <div class="rule-list">
+          <article v-for="r in replacementRules" :key="r.name"><input type="checkbox" :checked="r.enabled"><div><strong>{{r.name}}</strong><small>{{r.scope}} · {{r.pattern}}</small></div><span v-if="r.subscription" class="tiny-badge">订阅</span><button @click="activeRule=r;modal='rule-edit'">编辑</button><button>•••</button></article>
+        </div>
+      </div>
+    </main>
+
+    <!-- TXT toc -->
+    <main v-if="screen==='txttoc'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="go('settings')">‹</button><div><strong>TXT 章节识别规则</strong><small>新导入 TXT 的目录识别方式</small></div><button class="header-action" @click="modal='toc-edit'">新建规则</button></header>
+      <div class="subpage-body rules-page">
+        <div class="rule-toolbar"><label class="compact-search"><span>⌕</span><input placeholder="搜索规则名称或表达式"></label><select><option>全部规则</option><option>仅启用</option><option>仅停用</option></select><button>刷新规则</button></div>
+        <p class="helper-text">最多保存 64 条，排在前面的规则优先参与目录识别。</p>
+        <div class="rule-list">
+          <article v-for="(r,i) in tocRules" :key="r.name"><span class="drag-handle">☷</span><input type="checkbox" :checked="r.enabled"><div><strong>{{r.name}}</strong><small>{{r.regex}}</small></div><span class="tiny-badge">{{r.builtin?'内置':'自建'}}</span><button @click="activeToc=r;modal='toc-edit'">编辑</button><button>•••</button></article>
+        </div>
+      </div>
+    </main>
+
+    <!-- TTS -->
+    <main v-if="screen==='tts'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="go('settings')">‹</button><div><strong>TTS 朗读源</strong><small>系统语音与 HTTP TTS</small></div><button class="header-action" @click="modal='tts-edit'">新建配置</button></header>
+      <div class="subpage-body tts-page">
+        <div class="notice-block"><p>配置由本地保存并交给引擎执行；阅读设置只记录所选配置。</p></div>
+        <div class="setting-control-row"><div><strong>当前配置</strong><small>阅读时将章节文字发送给所选朗读源</small></div><select><option>系统默认语音</option><option>Edge TTS · zh-CN</option><option>自建 Azure TTS</option></select></div>
+        <div class="section-title-row"><h3>HTTP TTS 配置</h3><div class="inline-actions"><button>导入本地 JSON</button><button @click="modal='tts-import'">从链接导入</button></div></div>
+        <div class="tts-list">
+          <article v-for="t in ttsConfigs" :key="t.name"><span class="tts-icon">♫</span><div><strong>{{t.name}}</strong><small>{{t.url}}</small></div><span :class="['status-pill',{enabled:t.enabled}]">{{t.enabled?'已启用':'已停用'}}</span><button @click="activeTts=t;modal='tts-edit'">编辑</button></article>
+        </div>
+      </div>
+    </main>
+
+    <!-- Discovery/Home config -->
+    <main v-if="screen==='homeconfig'" class="subpage">
+      <header class="subpage-header"><button class="back-button" @click="go('settings')">‹</button><div><strong>发现栏目配置</strong><small>调整标签、栏目顺序和展示样式</small></div><button class="header-action">保存</button></header>
+      <div class="subpage-body config-page">
+        <div class="config-tabs"><button class="active">推荐</button><button>小说</button><button>漫画</button><button>视频</button><button>＋ 添加标签页</button></div>
+        <div class="setting-control-row"><div><strong>标签页名称</strong><small>当前标签：推荐</small></div><input value="推荐"></div>
+        <div class="section-title-row"><div><h3>栏目</h3><small>一个栏目对应一个已加载的内容分类</small></div><span>4 / 64</span></div>
+        <div class="config-section-list">
+          <article v-for="(c,i) in configSections" :key="c.title">
+            <div class="config-title-row"><input v-model="c.title"><div><button>↑</button><button>↓</button><button>×</button></div></div>
+            <div class="config-fields"><label><span>内容来源</span><select><option>{{c.source}}</option><option>源仓 · 小说源 A</option><option>MangaHub</option></select></label><label><span>分类</span><select><option>{{c.category}}</option><option>热门</option><option>最新</option></select></label><label><span>展示样式</span><select><option>{{c.style}}</option><option>横向封面</option><option>四列网格</option><option>榜单</option></select></label></div>
+          </article>
+        </div>
+        <button class="wide-add">＋ 添加栏目</button>
+      </div>
+    </main>
+
+    <!-- Reader -->
+    <main v-if="screen==='reader'" class="reader-shell" :class="'reader-'+readerMode">
+      <header class="reader-topbar">
+        <div class="reader-toolbar-row">
+          <button class="reader-back" @click="screen='main';tab='library'">‹</button>
+          <div class="reader-book-heading"><strong>{{selected?.title || '阅读器预览'}}</strong><small>{{readerChapterTitle}}</small></div>
+          <div class="reader-header-actions"><span>已保存</span><button @click="modal='reader-source'">⇄</button><button>↻</button><button>⇩</button></div>
+        </div>
+      </header>
+      <section class="reader-stage">
+        <div v-if="readerMode==='novel'" class="text-reader"><h1>{{readerChapterTitle}}</h1><p v-for="p in readerParagraphs" :key="p">{{p}}</p></div>
+        <div v-else-if="readerMode==='comic'" class="comic-reader"><img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=88" alt=""><img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=88" alt=""></div>
+        <div v-else-if="readerMode==='video'" class="video-reader"><div class="video-canvas"><img :src="selected?.img" alt=""><button>▶</button></div><div class="media-meta"><strong>{{selected?.title}}</strong><span>{{readerChapterTitle}}</span><select><option>1080P</option><option>720P</option><option>480P</option></select></div></div>
+        <div v-else-if="readerMode==='audio'" class="audio-reader"><img :src="selected?.img" alt=""><div><small>{{selected?.author}}</small><h2>{{selected?.title}}</h2><strong>{{readerChapterTitle}}</strong><div class="audio-wave"><i v-for="n in 56" :key="n" :style="{height:(8+(n*9)%34)+'px'}"></i></div><div class="audio-time"><span>18:42</span><b></b><span>42:06</span></div><div class="audio-buttons"><button>−15</button><button class="play-main">▶</button><button>+15</button></div></div></div>
+        <div v-else class="pdf-reader"><div class="pdf-paper"><small>PDF · 第 23 页</small><h2>示例 PDF 页面</h2><p v-for="p in readerParagraphs.slice(0,4)" :key="p">{{p}}</p></div></div>
+      </section>
+      <footer class="reader-footer">
+        <div class="reader-progress-row"><span>{{readerChapterTitle}}</span><input type="range" min="1" max="100" value="62"><small>62%</small></div>
+        <nav class="reader-bottom-tools">
+          <button @click="readerPanel=readerPanel==='directory'?null:'directory'"><span>☷</span><small>{{readerMode==='video'?'剧集':readerMode==='audio'?'节目':'目录'}}</small></button>
+          <button @click="readerPanel=readerPanel==='tts'?null:'tts'"><span>♬</span><small>{{readerMode==='audio'||readerMode==='video'?'播放':'朗读'}}</small></button>
+          <button @click="readerPanel=readerPanel==='appearance'?null:'appearance'"><span>Aa</span><small>界面</small></button>
+          <button @click="readerPanel=readerPanel==='settings'?null:'settings'"><span>⚙</span><small>设置</small></button>
+        </nav>
+      </footer>
+      <aside v-if="readerPanel" class="reader-popover">
+        <div class="popover-title"><strong>{{readerPanelTitle}}</strong><button @click="readerPanel=null">×</button></div>
+        <template v-if="readerPanel==='directory'">
+          <label class="compact-search"><span>⌕</span><input placeholder="搜索章节名称"></label>
+          <button v-for="(c,i) in readerDirectory" :key="c" class="reader-dir-row" :class="{current:i===5}"><span>{{String(i+1).padStart(2,'0')}}</span><strong>{{c}}</strong><small v-if="i===5">当前</small></button>
+        </template>
+        <template v-else-if="readerPanel==='tts'">
+          <div class="popover-setting"><span>{{readerMode==='audio'?'播放速度':'朗读引擎'}}</span><select><option>{{readerMode==='audio'?'1.0×':'系统默认语音'}}</option><option v-if="readerMode!=='audio'">Edge TTS</option></select></div>
+          <div class="popover-setting"><span>睡眠定时器</span><select><option>关闭</option><option>15 分钟</option><option>30 分钟</option><option>60 分钟</option></select></div>
+          <div v-if="readerMode==='novel'" class="popover-setting"><span>语速</span><input type="range" min=".5" max="5" value="1"></div>
+          <button v-if="readerMode==='novel'" class="wide-primary">开始朗读</button>
+        </template>
+        <template v-else-if="readerPanel==='appearance'">
+          <div v-if="readerMode==='novel'" class="popover-setting"><span>阅读方式</span><select><option>左右翻页</option><option>上下滚动</option></select></div>
+          <div v-if="readerMode==='novel'" class="popover-setting"><span>字号</span><input type="range" min="12" max="36" value="18"></div>
+          <div class="popover-setting"><span>{{readerMode==='comic'?'图片缩放':readerMode==='pdf'?'PDF 缩放':'阅读主题'}}</span><select><option>{{readerMode==='comic'?'适合宽度':readerMode==='pdf'?'整页':'纸张'}}</option><option>{{readerMode==='comic'?'原始大小':readerMode==='pdf'?'适合宽度':'夜间'}}</option></select></div>
+        </template>
+        <template v-else>
+          <div class="popover-setting"><span>跳转章节</span><input type="number" value="23"></div>
+          <button class="wide-secondary">添加当前页书签</button>
+          <button v-if="readerMode==='novel'" class="wide-secondary" @click="modal='dictionary'">词典查词</button>
+          <button class="wide-secondary">查找本章</button>
+        </template>
+      </aside>
+    </main>
+
+    <!-- Content detail -->
+    <div v-if="detailOpen && selected" class="detail-backdrop" @click.self="closeDetail">
+      <article class="detail-workspace">
+        <header class="detail-toolbar">
+          <button class="toolbar-icon back-large" aria-label="返回" @click="closeDetail">‹</button>
+          <nav class="detail-tabs">
+            <button :class="{active:detailTab==='info'}" @click="detailTab='info'">信息</button>
+            <button :class="{active:detailTab==='catalog'}" @click="detailTab='catalog'">{{catalogLabel}}</button>
+          </nav>
+          <div class="detail-toolbar-end">
+            <div class="detail-menu-wrap">
+              <button class="toolbar-icon" @click.stop="detailMenuOpen=!detailMenuOpen">•••</button>
+              <div v-if="detailMenuOpen" class="detail-menu" @click.stop>
+                <button @click="modal='metadata';detailMenuOpen=false">编辑显示信息</button>
+                <button>刷新内容信息</button><button>重置阅读进度</button><button>清除正文缓存</button>
+                <button @click="sourceSwitchOpen=true;detailMenuOpen=false">更换来源</button><div></div>
+                <button>刷新{{catalogLabel}}</button><button>检查更新</button><button>缓存全部{{catalogLabel}}</button><div></div>
+                <button class="danger-text">从内容库移除</button>
+              </div>
+            </div>
+          </div>
+        </header>
+        <main class="detail-body" @click="detailMenuOpen=false">
+          <section v-if="detailTab==='info'" class="detail-info-page">
+            <div class="detail-hero-rich" :class="'hero-'+selected.type">
+              <div class="detail-cover-rich"><img :src="selected.img" :alt="selected.title"></div>
+              <div class="detail-hero-copy"><span class="detail-kind">{{labels[selected.type]}}</span><h2>{{selected.title}}</h2><p class="detail-author">{{selected.author}}</p>
+                <div class="hero-actions"><button class="primary-btn" @click="startReader(selected.type)">{{primaryAction}}</button><button class="ghost-btn">{{inLibrary(selected)?'已收藏':'收藏'}}</button><button class="ghost-btn" @click="sourceSwitchOpen=true">换源</button></div>
+              </div>
+              <div class="progress-panel"><small>{{progressLabel}}</small><strong>{{selected.progress}}</strong><span class="progress-track"><i style="width:62%"></i></span></div>
+            </div>
+            <div class="detail-facts"><span><small>类型</small><strong>{{selected.kind}}</strong></span><span><small>规模</small><strong>{{selected.wordCount}}</strong></span><span><small>来源</small><strong>{{selected.sourceName}}</strong></span><span><small>分组</small><strong>{{selected.sourceGroup}}</strong></span></div>
+            <section class="detail-section"><div class="section-title-row"><h3>更新</h3><button @click="detailTab='catalog'">查看{{catalogLabel}} ›</button></div><div class="latest-row"><span><small>最新</small><strong>{{selected.latestChapter}}</strong></span><span><small>总计</small><strong>{{selected.chapterCount}}</strong></span><span><small>缓存</small><strong>{{Math.round(selected.chapterCount*.38)}} / {{selected.chapterCount}}</strong></span></div></section>
+            <section class="detail-section"><div class="section-title-row"><h3>简介</h3><button @click="modal='metadata'">编辑显示信息</button></div><p class="detail-intro">{{selected.intro}}</p></section>
+            <section class="detail-section source-section"><div class="section-title-row"><h3>内容来源</h3><button @click="sourceSwitchOpen=true">更换来源 ›</button></div><div class="source-current"><div><strong>{{selected.sourceName}}</strong><span>{{selected.sourceGroup}} · 已启用 · 可刷新信息</span></div><div class="source-actions"><button>刷新信息</button><button>检查更新</button></div></div></section>
+            <section class="detail-section compact-actions"><button>刷新{{catalogLabel}}</button><button>缓存全部</button><button>清除正文缓存</button><button>重置进度</button></section>
+          </section>
+          <section v-else class="catalog-page">
+            <div class="catalog-head-rich"><div><strong>{{chapterRows.length}} / {{selected.chapterCount}} 项</strong><span>{{selected.type==='video'||selected.type==='audio'?'媒体内容只支持整书换源':'支持章节级正文替换'}}</span></div><div><button>定位当前</button><button>刷新</button><button>缓存全部</button></div></div>
+            <label class="catalog-search-rich"><span>⌕</span><input v-model="catalogQuery" :placeholder="'搜索'+catalogLabel"><button v-if="catalogQuery" @click="catalogQuery=''">×</button></label>
+            <div class="catalog-list-rich"><div v-for="(chapter,i) in chapterRows" :key="chapter.index" class="catalog-row-rich" :class="{current:chapter.current}"><button class="catalog-main-action" @click="startReader(selected.type)"><span class="catalog-index">{{String(i+1).padStart(2,'0')}}</span><span class="catalog-copy"><strong>{{chapter.title}}</strong><small>{{chapter.current?'当前位置':chapter.duration|| (chapter.cached?'已缓存':'未缓存')}}</small></span><span :class="['cache-dot',{empty:!chapter.cached}]"></span></button><button v-if="selected.type!=='video'&&selected.type!=='audio'" class="replace-source-btn" @click="sourceSwitchOpen=true">换</button></div></div>
+          </section>
+        </main>
+        <footer class="detail-footer"><button class="footer-secondary">{{inLibrary(selected)?'从内容库移除':'加入内容库'}}</button><button class="footer-primary" @click="startReader(selected.type)">{{primaryAction}} <span>›</span></button></footer>
+        <aside v-if="sourceSwitchOpen" class="source-switch-drawer">
+          <div class="source-switch-head"><div><small>更换来源</small><strong>{{selected.title}}</strong></div><button @click="sourceSwitchOpen=false">×</button></div>
+          <p class="source-switch-note">{{selected.type==='video'||selected.type==='audio'?'音频和视频内容只支持整书切换来源，不支持替换单集内容。':'可以切换整书来源，也可以从目录对单章正文执行替换。'}}</p>
+          <label class="source-search"><span>⌕</span><input :value="selected.title"><button>重新搜索</button></label>
+          <div class="candidate-list"><article v-for="(source,i) in sourceCandidates" :key="source.name"><div><strong>{{source.name}}</strong><span>{{source.author}} · {{source.latest}}</span><small>{{source.speed}}</small></div><button class="ghost-btn">{{i===0?'当前来源':'选择'}}</button></article></div>
+          <div class="source-switch-actions"><button class="ghost-btn" @click="sourceSwitchOpen=false">取消</button><button class="primary-btn">切换整书来源</button></div>
+        </aside>
+      </article>
+    </div>
+
+    <!-- Prototype index, review-only -->
+    <button v-if="!prototypeMapOpen && screen!=='reader'" class="prototype-index-button" @click="prototypeMapOpen=true">界面索引</button>
+    <aside v-if="prototypeMapOpen" class="prototype-index">
+      <div class="prototype-index-head"><div><strong>界面索引</strong><small>仅用于原型审阅</small></div><button @click="prototypeMapOpen=false">×</button></div>
+      <div class="prototype-index-list">
+        <button @click="goMain('discover')">发现</button><button @click="goMain('library')">内容库</button><button @click="goMain('me')">我的</button>
+        <button @click="go('search')">搜索</button><button @click="go('rss')">RSS / 文章</button><button @click="go('organizer')">内容库整理</button><button @click="go('import')">导入</button>
+        <button @click="go('sources')">来源管理</button><button @click="go('tasks')">任务中心</button><button @click="go('history')">历史 / 书签</button>
+        <button @click="go('appearance')">外观</button><button @click="go('backup')">备份</button><button @click="go('settings')">高级设置</button>
+        <button @click="go('rules')">替换净化</button><button @click="go('txttoc')">TXT 目录规则</button><button @click="go('tts')">HTTP TTS</button><button @click="go('homeconfig')">发现栏目配置</button>
+        <button @click="openReaderPreview('novel')">小说阅读器</button><button @click="openReaderPreview('comic')">漫画阅读器</button><button @click="openReaderPreview('video')">视频播放器</button><button @click="openReaderPreview('audio')">音频播放器</button><button @click="openReaderPreview('pdf')">PDF 阅读器</button>
+      </div>
+    </aside>
+
+    <!-- Modals -->
+    <div v-if="modal" class="modal-backdrop" @click.self="modal=null">
+      <article v-if="modal==='metadata'" class="app-modal metadata-modal">
+        <header><div><small>显示信息</small><h2>编辑内容信息</h2></div><button @click="modal=null">×</button></header>
+        <div class="metadata-layout"><div class="metadata-cover"><img :src="selected?.img" alt=""><button>选择本地封面</button></div><div class="modal-form"><label><span>标题</span><input :value="selected?.title"></label><label><span>作者 / 创作者</span><input :value="selected?.author"></label><label><span>封面地址</span><input :value="selected?.img"></label><label><span>简介</span><textarea :value="selected?.intro"></textarea></label></div></div>
+        <footer><button @click="modal=null">取消</button><button class="primary-compact">保存</button></footer>
+      </article>
+
+      <article v-else-if="modal==='source-import'" class="app-modal">
+        <header><div><small>内容来源</small><h2>导入来源</h2></div><button @click="modal=null">×</button></header>
+        <div class="modal-form"><label><span>导入链接</span><input placeholder="https://example.com/sources.json"></label><p class="helper-text">支持普通内容源、RSS 源和兼容的 JSON 来源集合。</p><div class="drop-zone">拖入 JSON 文件，或点击选择文件</div></div>
+        <footer><button @click="modal=null">取消</button><button class="primary-compact">导入</button></footer>
+      </article>
+
+      <article v-else-if="modal==='source-edit'" class="app-modal">
+        <header><div><small>来源信息</small><h2>编辑来源</h2></div><button @click="modal=null">×</button></header>
+        <div class="modal-form"><label><span>显示名称</span><input :value="activeSource?.name"></label><label><span>分组</span><input :value="activeSource?.group"></label><label><span>User-Agent 覆盖</span><input placeholder="留空使用来源规则或全局默认值"></label></div>
+        <footer><button @click="modal=null">取消</button><button class="primary-compact">保存</button></footer>
+      </article>
+
+      <article v-else-if="modal==='source-login'" class="app-modal">
+        <header><div><small>来源登录</small><h2>{{activeSource?.name}}</h2></div><button @click="modal=null">×</button></header>
+        <div class="modal-form"><label><span>用户名</span><input placeholder="账号"></label><label><span>密码</span><input type="password" placeholder="密码不会回填"></label><div class="control-actions left"><button class="primary-compact">执行登录</button><button>打开网页登录</button></div><div class="notice-block"><p>当前来源存在已保存的登录数据和 Cookie。</p></div><button class="danger-outline">清除登录状态</button></div>
+      </article>
+
+      <article v-else-if="modal==='source-debug'" class="app-modal wide-modal">
+        <header><div><small>来源调试</small><h2>测试「{{activeSource?.name}}」</h2></div><button @click="modal=null">×</button></header>
+        <div class="debug-flow"><label class="compact-search"><span>⌕</span><input value="三体"><button class="primary-compact">开始单源搜索</button></label><div class="debug-steps"><span class="done">搜索</span><span class="done">详情</span><span class="active">目录</span><span>正文</span></div><div class="debug-result"><strong>三体 · 刘慈欣</strong><small>详情字段已获取 · 188 章</small></div><div class="debug-chapters"><button v-for="n in 8" :key="n">{{n}}. 示例章节标题</button></div><div class="chapter-preview"><strong>章节正文预览</strong><p>这是净化后的章节资源预览。来源规则和引擎对象不会交给页面。</p></div></div>
+      </article>
+
+      <article v-else-if="modal==='rule-edit'" class="app-modal">
+        <header><div><small>替换净化</small><h2>{{activeRule?'编辑规则':'新建规则'}}</h2></div><button @click="modal=null">×</button></header>
+        <div class="modal-form"><label><span>名称</span><input :value="activeRule?.name || '去除广告尾巴'"></label><label><span>查找表达式</span><textarea :value="activeRule?.pattern || '本章未完.*$'"></textarea></label><label><span>替换为</span><textarea></textarea></label><label><span>作用范围</span><select><option>全部内容</option><option>正文</option><option>标题</option></select></label><label class="check-row"><input type="checkbox" checked> 启用规则</label></div><footer><button @click="modal=null">取消</button><button class="primary-compact">保存</button></footer>
+      </article>
+
+      <article v-else-if="modal==='rule-subscribe'" class="app-modal">
+        <header><div><small>替换净化</small><h2>规则订阅</h2></div><button @click="modal=null">×</button></header>
+        <div class="modal-form"><label><span>规则订阅链接</span><input value="https://example.com/replacement-rules.json"></label><button class="primary-compact">添加订阅</button><div class="simple-list"><div><strong>社区净化规则</strong><span>128 条 · 已启用</span><button>刷新</button></div><div><strong>小说广告清理</strong><span>46 条 · 已启用</span><button>刷新</button></div></div></div>
+      </article>
+
+      <article v-else-if="modal==='toc-edit'" class="app-modal">
+        <header><div><small>TXT 目录</small><h2>{{activeToc?'编辑识别规则':'新建识别规则'}}</h2></div><button @click="modal=null">×</button></header>
+        <div class="modal-form"><label><span>规则名称</span><input :value="activeToc?.name || '中文章节'"></label><label><span>正则表达式</span><textarea :value="activeToc?.regex || '^\\s*第[一二三四五六七八九十百千万0-9]+[章节回].*$'"></textarea></label><label class="check-row"><input type="checkbox" checked> 启用规则</label><p class="helper-text">保存时会校验正则。排在前面的规则优先匹配。</p></div><footer><button @click="modal=null">取消</button><button class="primary-compact">保存</button></footer>
+      </article>
+
+      <article v-else-if="modal==='tts-edit'" class="app-modal wide-modal">
+        <header><div><small>HTTP TTS 配置</small><h2>{{activeTts?'编辑朗读源':'新建朗读源'}}</h2></div><button @click="modal=null">×</button></header>
+        <div class="modal-form two-col-form"><label><span>名称</span><input :value="activeTts?.name || '自建 TTS'"></label><label><span>URL</span><input :value="activeTts?.url || 'https://example.com/tts'"></label><label><span>Content-Type</span><input value="application/json"></label><label><span>并发率</span><input value="0"></label><label><span>登录 URL</span><input placeholder="可选"></label><label><span>登录 UI</span><textarea placeholder="可选的登录界面配置"></textarea></label><label><span>登录检查 JS</span><textarea placeholder="可选"></textarea></label><label><span>请求头</span><textarea placeholder="可选的请求头配置"></textarea></label></div><footer><button @click="modal=null">取消</button><button class="primary-compact">保存配置</button></footer>
+      </article>
+
+      <article v-else-if="modal==='tts-import'" class="app-modal"><header><div><small>TTS</small><h2>从链接导入</h2></div><button @click="modal=null">×</button></header><div class="modal-form"><label><span>配置链接</span><input placeholder="https://example.com/http-tts.json"></label></div><footer><button @click="modal=null">取消</button><button class="primary-compact">导入</button></footer></article>
+
+      <article v-else-if="modal==='article'" class="app-modal article-modal">
+        <header><div><small>{{activeArticle?.source}}</small><h2>{{activeArticle?.title}}</h2></div><button @click="modal=null">×</button></header><article class="article-body"><p>{{activeArticle?.summary}}</p><p v-for="p in readerParagraphs.slice(0,5)" :key="p">{{p}}</p></article>
+      </article>
+
+      <article v-else-if="modal==='dictionary'" class="app-modal">
+        <header><div><small>维基词典</small><h2>词典查词</h2></div><button @click="modal=null">×</button></header><div class="modal-form"><label class="compact-search"><span>⌕</span><input value="文明"><button class="primary-compact">查询</button></label><div class="dictionary-result"><strong>文明</strong><small>名词</small><p>人类社会发展过程中形成的物质与精神成果的总和。</p></div></div>
+      </article>
+
+      <article v-else-if="modal==='reader-source'" class="app-modal">
+        <header><div><small>更换来源</small><h2>{{selected?.title}}</h2></div><button @click="modal=null">×</button></header><div class="candidate-list modal-candidates"><article v-for="(source,i) in sourceCandidates" :key="source.name"><div><strong>{{source.name}}</strong><span>{{source.author}} · {{source.latest}}</span><small>{{source.speed}}</small></div><button class="ghost-btn">{{i===0?'当前来源':'选择'}}</button></article></div>
+      </article>
+
+      <article v-else-if="modal==='cache-confirm'" class="app-modal confirm-modal">
+        <div class="confirm-symbol">⌫</div><h2>清理在线正文缓存？</h2><p>会逐项清理在线内容的正文缓存。阅读进度、目录、封面和书签都会保留。</p><footer><button @click="modal=null">取消</button><button class="danger-button">确认清理</button></footer>
+      </article>
+
+      <article v-else class="app-modal confirm-modal"><div class="confirm-symbol">↓</div><h2>正在导入</h2><p>文件已识别，正在解析元数据、目录和封面。</p><div class="modal-progress"><i style="width:68%"></i></div><footer><button @click="modal=null">关闭</button></footer></article>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
