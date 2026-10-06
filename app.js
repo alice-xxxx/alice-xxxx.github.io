@@ -1,30 +1,45 @@
 const { createApp, computed, ref } = Vue;
 
 createApp({
-  setup(){
-    const tab=ref("discover");
-    const discoverCategory=ref("all");
-    const libraryCategory=ref("all");
-    const search=ref("");
-    const selected=ref(null);
-    const detailTab=ref("info");
-    const detailMenuOpen=ref(false);
-    const sourceSwitchOpen=ref(false);
-    const catalogSearch=ref("");
+  setup() {
+    const screen = ref("main");
+    const tab = ref("discover");
+    const discoverCategory = ref("all");
+    const libraryCategory = ref("all");
+    const search = ref("");
+    const searchWasRun = ref(false);
+    const selected = ref(null);
+    const detailOpen = ref(false);
+    const detailTab = ref("info");
+    const detailMenuOpen = ref(false);
+    const sourceSwitchOpen = ref(false);
+    const catalogQuery = ref("");
+    const prototypeMapOpen = ref(false);
+    const modal = ref(null);
+    const activeSource = ref(null);
+    const activeRule = ref(null);
+    const activeToc = ref(null);
+    const activeTts = ref(null);
+    const activeArticle = ref(null);
+    const sourceQuery = ref("");
+    const historyPeriod = ref("近 30 天");
+    const historyTab = ref("history");
+    const readerMode = ref("novel");
+    const readerPanel = ref(null);
 
-    const labels={novel:"小说",comic:"漫画",video:"视频",audio:"音频"};
-    const categories=[
-      {value:"all",label:"全部"},
-      {value:"novel",label:"小说"},
-      {value:"comic",label:"漫画"},
-      {value:"video",label:"视频"},
-      {value:"audio",label:"音频"}
+    const labels = { novel: "小说", comic: "漫画", video: "视频", audio: "音频" };
+    const categories = [
+      { value: "all", label: "全部" },
+      { value: "novel", label: "小说" },
+      { value: "comic", label: "漫画" },
+      { value: "video", label: "视频" },
+      { value: "audio", label: "音频" }
     ];
 
-    const items=[
+    const items = [
       {
         id:"jianlai",type:"novel",title:"剑来",author:"烽火戏诸侯",
-        sub:"烽火戏诸侯 · 少年持剑远游",stat:"326.5 万",
+        sub:"玄幻 · 少年持剑远游",stat:"326.5 万",
         img:"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=86",
         kind:"玄幻",wordCount:"1168 万字",chapterCount:1268,latestChapter:"第 1268 章 人间有风雪",
         sourceName:"源仓 · 小说源 A",sourceGroup:"网络小说",progress:"第 923 章 · 73%",
@@ -48,7 +63,7 @@ createApp({
       },
       {
         id:"threebody",type:"novel",title:"三体",author:"刘慈欣",
-        sub:"刘慈欣 · 黑暗森林正在展开",stat:"198.3 万",
+        sub:"科幻 · 黑暗森林正在展开",stat:"198.3 万",
         img:"https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=900&q=86",
         kind:"科幻",wordCount:"约 88 万字",chapterCount:188,latestChapter:"第三部 · 死神永生",
         sourceName:"本地 EPUB",sourceGroup:"本地",progress:"第 72 章 · 41%",
@@ -72,7 +87,7 @@ createApp({
       },
       {
         id:"suzume",type:"video",title:"铃芽之旅",author:"新海诚",
-        sub:"动画 · 新海诚 · 121 分钟",stat:"412.8 万",
+        sub:"动画 · 121 分钟",stat:"412.8 万",
         img:"https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=86",
         kind:"电影",wordCount:"121 分钟",chapterCount:1,latestChapter:"正片",
         sourceName:"Anime Stream",sourceGroup:"视频",progress:"正片 · 38:12",
@@ -80,7 +95,7 @@ createApp({
       },
       {
         id:"mysteries",type:"novel",title:"诡秘之主",author:"爱潜水的乌贼",
-        sub:"爱潜水的乌贼 · 蒸汽与神秘",stat:"520.7 万",
+        sub:"奇幻 · 蒸汽与神秘",stat:"520.7 万",
         img:"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=900&q=86",
         kind:"奇幻",wordCount:"446 万字",chapterCount:1432,latestChapter:"第 1432 章 新的旅程",
         sourceName:"Legado Source",sourceGroup:"网络小说",progress:"第 602 章 · 42%",
@@ -104,90 +119,140 @@ createApp({
       }
     ];
 
-    const libraryIds=new Set(["jianlai","threebody","goodnight","suzume","mysteries","blade"]);
+    const libraryIds = new Set(["jianlai","threebody","goodnight","suzume","mysteries","blade"]);
 
-    const discoverItems=computed(()=>{
-      const q=search.value.trim().toLowerCase();
-      return items.filter(item=>{
-        if(discoverCategory.value!=="all"&&item.type!==discoverCategory.value)return false;
-        if(!q)return true;
-        return (item.title+" "+item.sub+" "+labels[item.type]).toLowerCase().includes(q);
-      });
-    });
+    const navItems = [
+      { key:"discover", label:"发现" },
+      { key:"library", label:"内容库" },
+      { key:"me", label:"我的" }
+    ];
 
-    const libraryItems=computed(()=>items.filter(item=>
-      libraryIds.has(item.id)&&(libraryCategory.value==="all"||item.type===libraryCategory.value)
+    const sourceRows = ref([
+      {id:"s1",name:"源仓 · 小说源 A",kind:"小说",group:"网络小说",enabled:true,url:"https://source-a.example.com"},
+      {id:"s2",name:"MangaHub",kind:"漫画",group:"漫画",enabled:true,url:"https://manga.example.com"},
+      {id:"s3",name:"StreamSource CN",kind:"视频",group:"视频",enabled:true,url:"https://video.example.com"},
+      {id:"s4",name:"Podcast RSS",kind:"音频",group:"音频",enabled:true,url:"https://audio.example.com/feed.xml"},
+      {id:"s5",name:"Tech Weekly",kind:"RSS",group:"订阅",enabled:true,url:"https://rss.example.com"},
+      {id:"s6",name:"Old Book Source",kind:"小说",group:"备用",enabled:false,url:"https://old.example.com"},
+      {id:"s7",name:"Comic Mirror",kind:"漫画",group:"备用",enabled:false,url:"https://comic-mirror.example.com"},
+      {id:"s8",name:"Documentary World",kind:"视频",group:"视频",enabled:true,url:"https://doc.example.com"}
+    ]);
+
+    const articles = [
+      {source:"科技周刊",time:"2 小时前",title:"这一周值得关注的开源项目",summary:"从跨平台桌面应用到新的编译工具链，本周有不少值得收藏的项目。",read:false},
+      {source:"开发者资讯",time:"5 小时前",title:"浏览器端新 API 的几项变化",summary:"围绕文件系统、媒体能力和 WebView 的几项更新正在落地。",read:true},
+      {source:"设计观察",time:"昨天",title:"为什么越来越多产品减少大标题",summary:"信息密度与视觉秩序之间的平衡，正在重新影响移动端界面。",read:false},
+      {source:"影音速递",time:"昨天",title:"本周新片与纪录片更新",summary:"本周值得加入稍后观看列表的几部内容。",read:true}
+    ];
+
+    const tasks = [
+      {icon:"⇩",title:"《剑来》全书章节缓存",state:"运行中",done:842,total:1268,time:"刚刚"},
+      {icon:"⌕",title:"跨 18 个来源搜索「三体」",state:"运行中",done:13,total:18,time:"2 分钟前"},
+      {icon:"↻",title:"检查内容库更新",state:"已暂停",done:24,total:42,time:"9 分钟前"},
+      {icon:"⇩",title:"Podcast RSS 离线缓存",state:"已完成",done:18,total:18,time:"今天 19:22"}
+    ];
+
+    const bookmarks = [
+      {title:"三体 · 第 72 章",note:"关于黑暗森林法则的这一段"},
+      {title:"剑来 · 第 923 章",note:"这段山水描写留着以后再看"},
+      {title:"晚安，陌生人 · 18:42",note:"关于睡眠的建议"}
+    ];
+
+    const replacementRules = [
+      {name:"去除章节尾广告",scope:"正文",pattern:"本章未完.*$",enabled:true,subscription:false},
+      {name:"净化作者求票",scope:"正文",pattern:"求月票.*$",enabled:true,subscription:true},
+      {name:"统一空行",scope:"正文",pattern:"\\n{3,}",enabled:true,subscription:false},
+      {name:"隐藏来源尾注",scope:"正文",pattern:"来自.*?书源",enabled:false,subscription:false}
+    ];
+
+    const tocRules = [
+      {name:"中文章节",regex:"^\\s*第[一二三四五六七八九十百千万0-9]+[章节回].*$",enabled:true,builtin:true},
+      {name:"Chapter N",regex:"^\\s*Chapter\\s+\\d+.*$",enabled:true,builtin:true},
+      {name:"卷章组合",regex:"^\\s*第.+卷.+第.+章.*$",enabled:true,builtin:false},
+      {name:"数字标题",regex:"^\\s*\\d{1,5}[.、 ].+$",enabled:false,builtin:false}
+    ];
+
+    const ttsConfigs = [
+      {name:"Edge TTS · zh-CN",url:"https://tts.example.com/edge",enabled:true},
+      {name:"自建 Azure TTS",url:"https://tts.example.com/azure",enabled:true},
+      {name:"旧测试源",url:"https://tts.example.com/old",enabled:false}
+    ];
+
+    const configSections = ref([
+      {title:"今日热门",source:"源仓 · 小说源 A",category:"热门",style:"横向封面"},
+      {title:"漫画追更",source:"MangaHub",category:"最新",style:"四列网格"},
+      {title:"高分视频",source:"StreamSource CN",category:"热门",style:"横向封面"},
+      {title:"睡前听",source:"Podcast RSS",category:"推荐",style:"榜单"}
+    ]);
+
+    const importTypes = [
+      {icon:"T",ext:"TXT",desc:"自动识别章节目录"},
+      {icon:"E",ext:"EPUB",desc:"保留目录、封面和元数据"},
+      {icon:"C",ext:"CBZ",desc:"漫画压缩包"},
+      {icon:"P",ext:"PDF",desc:"PDF 文档阅读"}
+    ];
+
+    const heatmap = Array.from({length:91},(_,i)=>((i*7+i%5)%5));
+    const readerParagraphs = [
+      "夜色从远处一点点漫过来，山脊只剩下淡淡的轮廓。风穿过树梢，声音很轻，却把院子里最后一点暑气也带走了。",
+      "他把手里的书合上，想起白天那些没来得及说出口的话。很多时候，人并不是不知道答案，只是还没准备好承认答案。",
+      "窗外有车灯经过，光线在墙上晃了一下。桌上的水已经凉了，他却没有起身，只是继续听着远处若有若无的虫鸣。",
+      "有些事情只有走得足够远以后才能看清。那时候再回头，曾经以为无法跨过去的地方，也不过是路上的一个转弯。",
+      "第二天清晨，太阳照进房间的时候，他终于做出了决定。"
+    ];
+
+    const readerDirectory = Array.from({length:18},(_,i)=>`第 ${i+918} 章 · ${["山水之间","长夜","归途","旧事","风雪客","远行"][i%6]}`);
+
+    const sourceCandidates = [
+      {name:"源仓 · 线路 A",author:"作者一致",latest:"更新至最新",speed:"响应 410ms"},
+      {name:"阅读源 · 线路 B",author:"作者一致",latest:"少 2 章",speed:"响应 280ms"},
+      {name:"聚合源 · 线路 C",author:"需确认作者",latest:"更新至最新",speed:"响应 690ms"}
+    ];
+
+    const discoverItems = computed(() => items.filter(item =>
+      discoverCategory.value === "all" || item.type === discoverCategory.value
     ));
 
-    const navItems=[
-      {key:"discover",label:"发现"},
-      {key:"library",label:"内容库"},
-      {key:"me",label:"我的"}
-    ];
+    const libraryItems = computed(() => items.filter(item =>
+      libraryIds.has(item.id) && (libraryCategory.value === "all" || item.type === libraryCategory.value)
+    ));
 
-    const settingsA=[
-      {icon:"◷",title:"历史记录",sub:"阅读、观看和收听历史"},
-      {icon:"↓",title:"下载与任务",sub:"离线内容和后台任务"},
-      {icon:"◎",title:"内容来源",sub:"书源、视频源、RSS 与扩展"}
-    ];
-    const settingsB=[
-      {icon:"◐",title:"外观",sub:"主题、字体与显示密度"},
-      {icon:"↻",title:"备份与同步",sub:"导入、导出和恢复"},
-      {icon:"⚙",title:"设置",sub:"网络、缓存和高级选项"}
-    ];
-
-    const navIcon=(key,active)=> {
-      if(key==="discover"){
-        return active
-          ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M15.9 8.1 13.35 13.35 8.1 15.9l2.55-5.25L15.9 8.1Z" fill="white"/><circle cx="12" cy="12" r="1.15" fill="currentColor"/></svg>'
-          : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.9 8.1 13.35 13.35 8.1 15.9l2.55-5.25L15.9 8.1Z" fill="currentColor"/></svg>';
-      }
-      if(key==="library"){
-        return '<svg viewBox="0 0 24 24"><path d="M3.5 7.8h6.1l1.6 2h9.3v8.7a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V7.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.5 10h17" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
-      }
-      return '<svg viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.25" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.7 19.1c.65-3.2 3-5 6.3-5s5.65 1.8 6.3 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-    };
-
-    const openDetail=(item)=>{
-      selected.value=item;
-      detailTab.value="info";
-      detailMenuOpen.value=false;
-      sourceSwitchOpen.value=false;
-      catalogSearch.value="";
-    };
-
-    const closeDetail=()=>{
-      selected.value=null;
-      detailMenuOpen.value=false;
-      sourceSwitchOpen.value=false;
-      catalogSearch.value="";
-    };
-
-    const catalogLabel=computed(()=>{
-      if(!selected.value)return "目录";
-      return selected.value.type==="video"?"剧集":selected.value.type==="audio"?"节目":"目录";
+    const filteredSources = computed(() => {
+      const q = sourceQuery.value.trim().toLowerCase();
+      return sourceRows.value.filter(s => !q || (s.name+" "+s.group+" "+s.kind).toLowerCase().includes(q));
     });
 
-    const primaryAction=computed(()=>{
-      if(!selected.value)return "打开";
-      if(selected.value.type==="video")return "继续观看";
-      if(selected.value.type==="audio")return "继续收听";
-      if(selected.value.type==="comic")return "继续阅读";
+    const catalogLabel = computed(() => {
+      if (!selected.value) return "目录";
+      return selected.value.type === "video" ? "剧集" : selected.value.type === "audio" ? "节目" : "目录";
+    });
+
+    const primaryAction = computed(() => {
+      if (!selected.value) return "打开";
+      if (selected.value.type === "video") return "继续观看";
+      if (selected.value.type === "audio") return "继续收听";
       return "继续阅读";
     });
 
-    const chapterRows=computed(()=>{
-      if(!selected.value)return [];
-      const type=selected.value.type;
-      const count=type==="video"?18:type==="audio"?18:type==="comic"?24:28;
-      const current=Math.max(2,Math.floor(count*.58));
-      return Array.from({length:count},(_,i)=>{
-        const n=count-i;
-        const title=type==="video"
+    const progressLabel = computed(() => {
+      if (!selected.value) return "进度";
+      if (selected.value.type === "video") return "观看进度";
+      if (selected.value.type === "audio") return "收听进度";
+      return "阅读进度";
+    });
+
+    const chapterRows = computed(() => {
+      if (!selected.value) return [];
+      const type = selected.value.type;
+      const count = type === "video" ? 18 : type === "audio" ? 18 : type === "comic" ? 24 : 28;
+      const current = Math.max(2, Math.floor(count * .58));
+      return Array.from({length:count}, (_,i) => {
+        const n = count - i;
+        const title = type === "video"
           ? `第 ${n} 集 · ${["回到山里","旧友重逢","风从院子里吹过","夜路","山野之间"][n%5]}`
-          : type==="audio"
+          : type === "audio"
             ? `EP.${String(n+100).padStart(3,"0")} · ${["留一点安静","雨停之后","夜间列车","今天也辛苦了","睡前来信"][n%5]}`
-            : type==="comic"
+            : type === "comic"
               ? `第 ${n} 话 · ${["灯下","各自的答案","夏日","回声","向前一步"][n%5]}`
               : `第 ${n+900} 章 · ${["山水之间","长夜","归途","旧事","风雪客"][n%5]}`;
         return {
@@ -195,284 +260,109 @@ createApp({
           title,
           current:i===current,
           cached:i%3!==0,
-          duration:type==="video"?`${38+n%9} 分钟`:type==="audio"?`${24+n%22} 分钟`:""
+          duration:type==="video" ? `${38+n%9} 分钟` : type==="audio" ? `${24+n%22} 分钟` : ""
         };
-      }).filter(row=>!catalogSearch.value.trim()||row.title.toLowerCase().includes(catalogSearch.value.trim().toLowerCase()));
+      }).filter(row => !catalogQuery.value.trim() || row.title.toLowerCase().includes(catalogQuery.value.trim().toLowerCase()));
     });
 
-    const sourceCandidates=[
-      {name:"源仓 · 线路 A",author:"作者一致",latest:"更新至最新",speed:"响应 410ms"},
-      {name:"阅读源 · 线路 B",author:"作者一致",latest:"少 2 章",speed:"响应 280ms"},
-      {name:"聚合源 · 线路 C",author:"需确认作者",latest:"更新至最新",speed:"响应 690ms"}
-    ];
+    const readerChapterTitle = computed(() => {
+      if (readerMode.value === "video") return "第 18 集 · 山野之间";
+      if (readerMode.value === "audio") return "EP.121 · 今天也辛苦了";
+      if (readerMode.value === "comic") return "第 61 话 · 夏日";
+      if (readerMode.value === "pdf") return "第 23 页";
+      return "第 923 章 · 山水之间";
+    });
+
+    const readerPanelTitle = computed(() => {
+      if (readerPanel.value === "directory") return readerMode.value === "video" ? "剧集" : readerMode.value === "audio" ? "节目" : "章节目录";
+      if (readerPanel.value === "tts") return readerMode.value === "audio" || readerMode.value === "video" ? "播放" : "朗读";
+      if (readerPanel.value === "appearance") return "界面";
+      return "阅读设置";
+    });
+
+    function navIcon(key, active) {
+      if (key === "discover") {
+        return active
+          ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M15.9 8.1 13.35 13.35 8.1 15.9l2.55-5.25L15.9 8.1Z" fill="white"/><circle cx="12" cy="12" r="1.15" fill="currentColor"/></svg>'
+          : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.9 8.1 13.35 13.35 8.1 15.9l2.55-5.25L15.9 8.1Z" fill="currentColor"/></svg>';
+      }
+      if (key === "library") {
+        return '<svg viewBox="0 0 24 24"><path d="M3.5 7.8h6.1l1.6 2h9.3v8.7a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V7.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.5 10h17" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
+      }
+      return '<svg viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.25" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.7 19.1c.65-3.2 3-5 6.3-5s5.65 1.8 6.3 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    }
+
+    function go(next) {
+      detailOpen.value = false;
+      sourceSwitchOpen.value = false;
+      detailMenuOpen.value = false;
+      modal.value = null;
+      screen.value = next;
+      prototypeMapOpen.value = false;
+      window.scrollTo(0,0);
+    }
+
+    function goMain(nextTab) {
+      screen.value = "main";
+      tab.value = nextTab;
+      detailOpen.value = false;
+      modal.value = null;
+      prototypeMapOpen.value = false;
+      window.scrollTo(0,0);
+    }
+
+    function openDetail(item) {
+      selected.value = item;
+      detailTab.value = "info";
+      detailMenuOpen.value = false;
+      sourceSwitchOpen.value = false;
+      catalogQuery.value = "";
+      detailOpen.value = true;
+    }
+
+    function closeDetail() {
+      detailOpen.value = false;
+      sourceSwitchOpen.value = false;
+      detailMenuOpen.value = false;
+      catalogQuery.value = "";
+    }
+
+    function inLibrary(item) {
+      return !!item && libraryIds.has(item.id);
+    }
+
+    function startReader(type) {
+      if (!selected.value) selected.value = items[0];
+      readerMode.value = type === "novel" ? "novel" : type;
+      if (readerMode.value === "comic" && selected.value?.type !== "comic") selected.value = items.find(x=>x.type==="comic");
+      if (readerMode.value === "video" && selected.value?.type !== "video") selected.value = items.find(x=>x.type==="video");
+      if (readerMode.value === "audio" && selected.value?.type !== "audio") selected.value = items.find(x=>x.type==="audio");
+      detailOpen.value = false;
+      readerPanel.value = null;
+      screen.value = "reader";
+      prototypeMapOpen.value = false;
+    }
+
+    function openReaderPreview(mode) {
+      if (mode === "novel") selected.value = items.find(x=>x.type==="novel");
+      if (mode === "comic") selected.value = items.find(x=>x.type==="comic");
+      if (mode === "video") selected.value = items.find(x=>x.type==="video");
+      if (mode === "audio") selected.value = items.find(x=>x.type==="audio");
+      if (mode === "pdf") selected.value = items.find(x=>x.id==="threebody");
+      readerMode.value = mode;
+      readerPanel.value = null;
+      screen.value = "reader";
+      prototypeMapOpen.value = false;
+    }
 
     return {
-      tab,discoverCategory,libraryCategory,search,selected,detailTab,detailMenuOpen,sourceSwitchOpen,catalogSearch,
-      labels,categories,discoverItems,libraryItems,navItems,settingsA,settingsB,navIcon,
-      openDetail,closeDetail,catalogLabel,primaryAction,chapterRows,sourceCandidates
+      screen,tab,discoverCategory,libraryCategory,search,searchWasRun,selected,detailOpen,detailTab,detailMenuOpen,
+      sourceSwitchOpen,catalogQuery,prototypeMapOpen,modal,activeSource,activeRule,activeToc,activeTts,activeArticle,
+      sourceQuery,historyPeriod,historyTab,readerMode,readerPanel,
+      labels,categories,items,navItems,sourceRows,articles,tasks,bookmarks,replacementRules,tocRules,ttsConfigs,configSections,
+      importTypes,heatmap,readerParagraphs,readerDirectory,sourceCandidates,
+      discoverItems,libraryItems,filteredSources,catalogLabel,primaryAction,progressLabel,chapterRows,readerChapterTitle,readerPanelTitle,
+      navIcon,go,goMain,openDetail,closeDetail,inLibrary,startReader,openReaderPreview
     };
-  },
-  template:`
-    <div class="app-shell">
-      <aside class="side-rail">
-        <div class="rail-list">
-          <button v-for="n in navItems" :key="n.key" class="rail-item" :class="{active:tab===n.key}" @click="tab=n.key">
-            <span class="nav-icon" v-html="navIcon(n.key,tab===n.key)"></span>
-            <span>{{n.label}}</span>
-          </button>
-        </div>
-      </aside>
-
-      <div class="page-wrap">
-        <main class="page">
-          <section v-if="tab==='discover'">
-            <div class="topbar">
-              <label class="search-box">
-                <svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15.6 15.6 4.2 4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                <input v-model="search" type="search" placeholder="搜索内容、作者、频道或来源">
-              </label>
-            </div>
-
-            <nav class="chips">
-              <button v-for="c in categories" :key="c.value" class="chip" :class="{active:discoverCategory===c.value}" @click="discoverCategory=c.value">{{c.label}}</button>
-            </nav>
-
-            <div v-if="discoverItems.length" class="content-grid">
-              <article v-for="item in discoverItems" :key="item.id" class="content-card">
-                <button class="cover-button" @click="openDetail(item)">
-                  <div class="cover"><img :src="item.img" :alt="item.title" loading="lazy"></div>
-                  <div class="card-info">
-                    <div class="card-title">{{item.title}}</div>
-                    <div class="card-sub">{{item.sub}}</div>
-                    <div class="card-meta">
-                      <i class="type-mark" :class="'type-'+item.type">{{labels[item.type][0]}}</i>
-                      <span>{{labels[item.type]}}</span><span>·</span><span>{{item.stat}}</span>
-                    </div>
-                  </div>
-                </button>
-              </article>
-            </div>
-            <div v-else class="empty"><strong>没有找到相关内容</strong><span>换一个关键词或内容类型试试。</span></div>
-          </section>
-
-          <section v-else-if="tab==='library'" class="library-view">
-            <div class="library-head"><span>{{libraryItems.length}} 个收藏</span><button class="sort-button">最近浏览 ↓</button></div>
-            <nav class="chips">
-              <button v-for="c in categories" :key="c.value" class="chip" :class="{active:libraryCategory===c.value}" @click="libraryCategory=c.value">{{c.label}}</button>
-            </nav>
-            <div class="content-grid">
-              <article v-for="item in libraryItems" :key="item.id" class="content-card">
-                <button class="cover-button" @click="openDetail(item)">
-                  <div class="cover"><img :src="item.img" :alt="item.title" loading="lazy"></div>
-                  <div class="card-info">
-                    <div class="card-title">{{item.title}}</div>
-                    <div class="card-sub">{{item.sub}}</div>
-                    <div class="card-meta">
-                      <i class="type-mark" :class="'type-'+item.type">{{labels[item.type][0]}}</i>
-                      <span>{{labels[item.type]}}</span><span>·</span><span>最近浏览</span>
-                    </div>
-                  </div>
-                </button>
-              </article>
-            </div>
-          </section>
-
-          <section v-else class="me-view">
-            <div class="settings-group first-group">
-              <small class="group-label">内容与数据</small>
-              <button v-for="s in settingsA" :key="s.title" class="setting-row">
-                <span class="setting-icon">{{s.icon}}</span>
-                <span class="setting-copy"><strong>{{s.title}}</strong><small>{{s.sub}}</small></span>
-                <span class="chevron">›</span>
-              </button>
-            </div>
-            <div class="settings-group">
-              <small class="group-label">应用</small>
-              <button v-for="s in settingsB" :key="s.title" class="setting-row">
-                <span class="setting-icon">{{s.icon}}</span>
-                <span class="setting-copy"><strong>{{s.title}}</strong><small>{{s.sub}}</small></span>
-                <span class="chevron">›</span>
-              </button>
-            </div>
-          </section>
-        </main>
-      </div>
-
-      <nav class="bottom-nav">
-        <button v-for="n in navItems" :key="n.key" class="bottom-item" :class="{active:tab===n.key}" @click="tab=n.key">
-          <span class="nav-icon" v-html="navIcon(n.key,tab===n.key)"></span>
-          <span>{{n.label}}</span>
-        </button>
-      </nav>
-
-      <div v-if="selected" class="detail-backdrop" @click.self="closeDetail">
-        <article class="detail-workspace">
-          <header class="detail-toolbar">
-            <button class="toolbar-icon" aria-label="返回" @click="closeDetail">‹</button>
-            <nav class="detail-tabs">
-              <button :class="{active:detailTab==='info'}" @click="detailTab='info'">信息</button>
-              <button :class="{active:detailTab==='catalog'}" @click="detailTab='catalog'">{{catalogLabel}}</button>
-            </nav>
-            <div class="detail-toolbar-end">
-              <button v-if="detailTab==='catalog'" class="toolbar-icon" aria-label="搜索目录" @click="catalogSearch=catalogSearch?'':' '">⌕</button>
-              <div class="detail-menu-wrap">
-                <button class="toolbar-icon" aria-label="更多" @click.stop="detailMenuOpen=!detailMenuOpen">•••</button>
-                <div v-if="detailMenuOpen" class="detail-menu" @click.stop>
-                  <button>编辑显示信息</button>
-                  <button>刷新内容信息</button>
-                  <button>重置阅读进度</button>
-                  <button>清除正文缓存</button>
-                  <button @click="sourceSwitchOpen=true;detailMenuOpen=false">更换来源</button>
-                  <div></div>
-                  <button>刷新{{catalogLabel}}</button>
-                  <button>检查更新</button>
-                  <button>缓存全部{{catalogLabel}}</button>
-                  <div></div>
-                  <button class="danger-text">从内容库移除</button>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <main class="detail-body" @click="detailMenuOpen=false">
-            <section v-if="detailTab==='info'" class="detail-info-page">
-              <div class="detail-hero-rich" :class="'hero-'+selected.type">
-                <div class="detail-cover-rich"><img :src="selected.img" :alt="selected.title"></div>
-                <div class="detail-hero-copy">
-                  <span class="detail-kind">{{labels[selected.type]}}</span>
-                  <h2>{{selected.title}}</h2>
-                  <p class="detail-author">{{selected.author}}</p>
-                  <div class="hero-actions">
-                    <button class="primary-btn">{{primaryAction}}</button>
-                    <button class="ghost-btn">收藏</button>
-                    <button class="ghost-btn" @click="sourceSwitchOpen=true">换源</button>
-                  </div>
-                </div>
-
-                <div class="progress-panel">
-                  <small>{{selected.type==='video'?'观看进度':selected.type==='audio'?'收听进度':'阅读进度'}}</small>
-                  <strong>{{selected.progress}}</strong>
-                  <span class="progress-track"><i style="width:62%"></i></span>
-                </div>
-              </div>
-
-              <div class="detail-facts">
-                <span><small>类型</small><strong>{{selected.kind}}</strong></span>
-                <span><small>{{selected.type==='video'||selected.type==='audio'?'规模':'字数 / 话数'}}</small><strong>{{selected.wordCount}}</strong></span>
-                <span><small>来源</small><strong>{{selected.sourceName}}</strong></span>
-                <span><small>分组</small><strong>{{selected.sourceGroup}}</strong></span>
-              </div>
-
-              <section class="detail-section">
-                <div class="section-title-row"><h3>更新</h3><button @click="detailTab='catalog'">查看{{catalogLabel}} ›</button></div>
-                <div class="latest-row">
-                  <span><small>最新</small><strong>{{selected.latestChapter}}</strong></span>
-                  <span><small>总计</small><strong>{{selected.chapterCount}} {{selected.type==='video'?'集':selected.type==='audio'?'期':'章'}}</strong></span>
-                  <span><small>缓存</small><strong>{{Math.round(selected.chapterCount*.38)}} / {{selected.chapterCount}}</strong></span>
-                </div>
-              </section>
-
-              <section class="detail-section">
-                <div class="section-title-row"><h3>简介</h3><button>编辑显示信息</button></div>
-                <p class="detail-intro">{{selected.intro}}</p>
-              </section>
-
-              <section class="detail-section source-section">
-                <div class="section-title-row"><h3>内容来源</h3><button @click="sourceSwitchOpen=true">更换来源 ›</button></div>
-                <div class="source-current">
-                  <div>
-                    <strong>{{selected.sourceName}}</strong>
-                    <span>{{selected.sourceGroup}} · 已启用 · 可刷新信息</span>
-                  </div>
-                  <div class="source-actions">
-                    <button>刷新信息</button>
-                    <button>检查更新</button>
-                  </div>
-                </div>
-              </section>
-
-              <section class="detail-section compact-actions">
-                <button>刷新{{catalogLabel}}</button>
-                <button>缓存全部</button>
-                <button>清除正文缓存</button>
-                <button>重置进度</button>
-              </section>
-            </section>
-
-            <section v-else class="catalog-page">
-              <div class="catalog-head-rich">
-                <div>
-                  <strong>{{chapterRows.length}} / {{selected.chapterCount}} {{selected.type==='video'?'集':selected.type==='audio'?'期':'章'}}</strong>
-                  <span v-if="selected.type==='video'||selected.type==='audio'">媒体内容只支持整书换源</span>
-                  <span v-else>支持章节级正文替换</span>
-                </div>
-                <div>
-                  <button>定位当前</button>
-                  <button>刷新</button>
-                  <button>缓存全部</button>
-                </div>
-              </div>
-
-              <label class="catalog-search-rich">
-                <span>⌕</span>
-                <input v-model="catalogSearch" :placeholder="'搜索'+catalogLabel">
-                <button v-if="catalogSearch" @click="catalogSearch=''">×</button>
-              </label>
-
-              <div class="catalog-list-rich">
-                <div v-for="(chapter,i) in chapterRows" :key="chapter.index" class="catalog-row-rich" :class="{current:chapter.current}">
-                  <button class="catalog-main-action">
-                    <span class="catalog-index">{{String(i+1).padStart(2,'0')}}</span>
-                    <span class="catalog-copy">
-                      <strong>{{chapter.title}}</strong>
-                      <small>
-                        <template v-if="chapter.current">当前{{selected.type==='video'?'观看':selected.type==='audio'?'收听':'阅读'}}位置</template>
-                        <template v-else-if="chapter.duration">{{chapter.duration}}</template>
-                        <template v-else>{{chapter.cached?'已缓存':'未缓存'}}</template>
-                      </small>
-                    </span>
-                    <span v-if="chapter.cached" class="cache-dot" title="已缓存"></span>
-                    <span v-else class="cache-dot empty" title="未缓存"></span>
-                  </button>
-                  <button v-if="selected.type!=='video'&&selected.type!=='audio'" class="replace-source-btn" title="替换本章正文" @click="sourceSwitchOpen=true">换</button>
-                </div>
-              </div>
-            </section>
-          </main>
-
-          <footer class="detail-footer">
-            <button class="footer-secondary">{{libraryIds?.has?.(selected.id)?'从内容库移除':'加入内容库'}}</button>
-            <button class="footer-primary">{{primaryAction}} <span>›</span></button>
-          </footer>
-
-          <aside v-if="sourceSwitchOpen" class="source-switch-drawer">
-            <div class="source-switch-head">
-              <div><small>更换来源</small><strong>{{selected.title}}</strong></div>
-              <button @click="sourceSwitchOpen=false">×</button>
-            </div>
-            <p class="source-switch-note">
-              {{selected.type==='video'||selected.type==='audio'
-                ? '音频和视频内容只支持整书切换来源，不支持替换单集内容。'
-                : '可以切换整书来源，也可以从目录对单章正文执行替换。'}}
-            </p>
-            <label class="source-search"><span>⌕</span><input :value="selected.title" aria-label="来源搜索关键词"><button>重新搜索</button></label>
-            <div class="candidate-list">
-              <article v-for="(source,i) in sourceCandidates" :key="source.name">
-                <div>
-                  <strong>{{source.name}}</strong>
-                  <span>{{source.author}} · {{source.latest}}</span>
-                  <small>{{source.speed}}</small>
-                </div>
-                <button class="ghost-btn">{{i===0?'当前来源':'选择'}}</button>
-              </article>
-            </div>
-            <div class="source-switch-actions">
-              <button class="ghost-btn" @click="sourceSwitchOpen=false">取消</button>
-              <button class="primary-btn">切换整书来源</button>
-            </div>
-          </aside>
-        </article>
-      </div>
-    </div>
-  `
+  }
 }).mount("#app");
