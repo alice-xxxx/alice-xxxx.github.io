@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>书源编辑设计</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#182230;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}.app{max-width:1100px;margin:30px auto;padding:20px}.top{display:flex;justify-content:space-between;align-items:center}.title{font-size:28px;font-weight:700}.save{background:#2563eb;color:white;border:0;border-radius:10px;padding:10px 22px;font-size:16px}.card{background:white;border-radius:18px;padding:20px;margin-top:18px;box-shadow:0 2px 12px #0000000b}.source{display:flex;gap:15px;align-items:center}.icon{width:56px;height:56px;border-radius:12px;background:#ef4444;color:white;font-size:32px;display:flex;align-items:center;justify-content:center}.tabs{display:flex;gap:8px;margin-top:20px;overflow:auto}.tab{padding:12px 22px;border-radius:12px;background:#f1f5f9}.active{background:#dbeafe;color:#2563eb;font-weight:700}.layout{display:grid;grid-template-columns:260px 1fr;gap:18px}.field-nav div{padding:12px;border-radius:10px}.field-nav .on{background:#eff6ff;color:#2563eb}.field{display:flex;align-items:center;border-bottom:1px solid #eee;padding:12px 0;gap:20px}.label{width:180px}.key{font-size:12px;color:#94a3b8}.input{flex:1;background:#f8fafc;border:1px solid #e2e8f0;padding:10px;border-radius:8px;font-family:monospace}.note{background:#eff6ff;padding:14px;border-radius:10px;color:#2563eb;margin-bottom:15px}@media(max-width:700px){.layout{grid-template-columns:1fr}.field-nav{display:flex;overflow:auto}.label{width:100px}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="top"><div class="title">← 书源编辑</div><button class="save">保存</button></div>
+<div class="card source"><div class="icon">书</div><div><h2>起点中文网</h2><div>https://www.qidian.com</div></div></div>
+<div class="tabs"><div class="tab">基础</div><div class="tab">请求</div><div class="tab active">搜索</div><div class="tab">详情</div><div class="tab">目录</div><div class="tab">正文</div><div class="tab">其它</div></div>
+<div class="card layout">
+<div class="field-nav">
+<div class="on">书籍列表<br><small>bookList</small></div><div>书名<br><small>name</small></div><div>作者<br><small>author</small></div><div>分类<br><small>kind</small></div><div>封面<br><small>coverUrl</small></div><div>简介<br><small>intro</small></div>
+</div>
+<div>
+<div class="note">所有书源字段均可编辑，未知字段自动保留。</div>
+<div class="field"><div class="label">书籍列表<div class="key">bookList</div></div><div class="input">.book-item</div></div>
+<div class="field"><div class="label">书名<div class="key">name</div></div><div class="input">.title@text</div></div>
+<div class="field"><div class="label">作者<div class="key">author</div></div><div class="input">.author@text</div></div>
+<div class="field"><div class="label">分类<div class="key">kind</div></div><div class="input">.category@text</div></div>
+<div class="field"><div class="label">封面<div class="key">coverUrl</div></div><div class="input">img@src</div></div>
+</div>
+</div>
+</div>
+</body></html>
